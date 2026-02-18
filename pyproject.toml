@@ -37,7 +37,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.coverage.run]
@@ -95,7 +95,8 @@ unfixable = [
 # パス/用途別に緩める（本番は厳しめ、周辺は緩めの運用を実現）
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401"]  # public API 再エクスポートの未使用 import を許容。
-"tests/**"       = ["B905", "D100", "D101", "D102", "D107"]  # テストでは zip(strict=True) を強制せず、docstring も不要。
+"tests/**"            = ["B905", "D100", "D101", "D102", "D107"]  # テストでは zip(strict=True) を強制せず、docstring も不要。
+"tests/**/__init__.py" = ["D104"]  # テストの __init__.py は空ファイルのため、パッケージ docstring を免除。
 
 # docstring のスタイルを Google 方式に統一
 [tool.ruff.lint.pydocstyle]

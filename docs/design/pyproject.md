@@ -135,6 +135,7 @@
 |---------|--------------|------|
 | `**/__init__.py` | F401 | re-export の未使用 import を許容（詳細は [packaging.md](packaging.md) 参照） |
 | `tests/**` | B905, D100, D101, D102, D107 | テストでは `zip(strict=True)` を強制せず、docstring も不要（詳細は [comment.md](comment.md) 参照） |
+| `tests/**/__init__.py` | D104 | テストの `__init__.py` は空ファイルのためパッケージ docstring を免除（詳細は [packaging.md](packaging.md) 参照） |
 
 ### docstringスタイル（pydocstyle）
 
@@ -157,9 +158,9 @@
 `executionEnvironments` は「どのディレクトリのコードがどの import パスを持つか」を pyright に伝える設定である。
 
 - `root = "src"` の環境: `extraPaths = ["src"]` を設定し、`src/` 配下のモジュールを互いに import できるようにする
-- `root = "tests"` の環境: `extraPaths = ["src", "."]` を設定し、テストから本番コードとテスト補助モジュールの両方にアクセスできるようにする
+- `root = "tests"` の環境: `extraPaths = ["src", "."]` を設定し、テストから本番コードにアクセスできるようにする
 
-`"."` がプロジェクトルートを意味し、`tests/` 直下に配置した補助モジュールを pyright が解決できるようになる。詳細な import 解決の方針は [packaging.md](packaging.md) の「推奨ツール設定 / pyright」セクションを参照。
+テストパッケージの絶対 import（`from tests.unit.test_transform.fakes import ...`）は `__init__.py` によるパッケージ化と `"."` の追加で pyright が解決する。`"."` はプロジェクトルートを意味する。詳細な import 解決の方針は [packaging.md](packaging.md) の「推奨ツール設定 / pyright」セクションを参照。
 
 ### 診断レベルの設計思想
 

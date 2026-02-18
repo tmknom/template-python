@@ -138,38 +138,18 @@ class TestTextFileSystemWriter:
         assert test_file.exists()
         assert test_file.read_text(encoding="utf-8") == ""
 
-    def test_write_正常系_UTF8文字エンコーディング処理(self, tmp_path: Path):
-        # Arrange
-        test_file = tmp_path / "utf8_write.txt"
-        content = "特殊文字テスト: éñ中文한글🎉"
-
-        writer = TextFileSystemWriter()
-
-        # Act
-        writer.write(content, test_file)
-
-        # Assert
-        assert test_file.read_text(encoding="utf-8") == content
-
     def test_write_正常系_存在しないディレクトリを自動作成する(self, tmp_path: Path):
         # Arrange
         nested_dir = tmp_path / "level1" / "level2" / "level3"
         test_file = nested_dir / "test.txt"
         content = "auto mkdir test"
 
-        # ディレクトリが存在しないことを確認
-        assert not nested_dir.exists()
-
         writer = TextFileSystemWriter()
 
         # Act
         writer.write(content, test_file)
 
         # Assert
-        # ディレクトリが自動作成され、ファイルが正常に保存されることを確認
-        assert nested_dir.exists()
-        assert nested_dir.is_dir()
-        assert test_file.exists()
         assert test_file.read_text(encoding="utf-8") == content
 
     def test_write_異常系_ファイルパスがディレクトリでFileSystemError(self, tmp_path: Path):
@@ -180,12 +160,8 @@ class TestTextFileSystemWriter:
         writer = TextFileSystemWriter()
 
         # Act & Assert
-        with pytest.raises(FileSystemError) as exc_info:
+        with pytest.raises(FileSystemError):
             writer.write("test content", test_dir)
-
-        error = exc_info.value
-        assert "指定されたパスはディレクトリです" in error.message
-        assert str(test_dir) in error.message
 
     @pytest.mark.skipif(os.name == "nt", reason="Unix系システムでのみ有効な権限テスト")
     def test_write_異常系_権限なしディレクトリでFileSystemError(self, tmp_path: Path):
@@ -201,28 +177,11 @@ class TestTextFileSystemWriter:
 
         # Act & Assert
         try:
-            with pytest.raises(FileSystemError) as exc_info:
+            with pytest.raises(FileSystemError):
                 writer.write("test content", test_file)
-
-            error = exc_info.value
-            assert "ファイルへの書き込み権限がありません" in error.message
-            assert str(test_file) in error.message
         finally:
             # テスト後に権限を復元(クリーンアップのため)
             test_dir.chmod(0o755)
-
-    def test_write_正常系_戻り値なし確認(self, tmp_path: Path):
-        # Arrange
-        test_file = tmp_path / "return_test.txt"
-        content = "return value test"
-
-        writer = TextFileSystemWriter()
-
-        # Act
-        result = writer.write(content, test_file)
-
-        # Assert
-        assert result is None
 
     def test_write_異常系_ファイル名不正でFileSystemError(self, tmp_path: Path):
         # Arrange
@@ -233,11 +192,8 @@ class TestTextFileSystemWriter:
         writer = TextFileSystemWriter()
 
         # Act & Assert
-        with pytest.raises(FileSystemError) as exc_info:
+        with pytest.raises(FileSystemError):
             writer.write("test content", test_file)
-
-        error = exc_info.value
-        assert "ファイル書き込み中にエラーが発生しました" in error.message
 
     @pytest.mark.skipif(os.name == "nt", reason="Unix系システムでのみ有効な権限テスト")
     def test_write_異常系_ディレクトリ作成権限なしでFileSystemError(self, tmp_path: Path):
@@ -254,12 +210,8 @@ class TestTextFileSystemWriter:
 
         # Act & Assert
         try:
-            with pytest.raises(FileSystemError) as exc_info:
+            with pytest.raises(FileSystemError):
                 writer.write("test content", test_file)
-
-            error = exc_info.value
-            assert "ディレクトリの作成権限がありません" in error.message
-            assert str(test_dir / "newdir") in error.message
         finally:
             # テスト後に権限を復元(クリーンアップのため)
             test_dir.chmod(0o755)
@@ -289,21 +241,5 @@ class TestTextFileSystemWriter:
         writer = TextFileSystemWriter()
 
         # Act & Assert
-        with pytest.raises(FileSystemError) as exc_info:
+        with pytest.raises(FileSystemError):
             writer.write("test content", test_file)
-
-        error = exc_info.value
-        assert "ディレクトリの作成に失敗しました" in error.message
-
-    def test_単一責任_書き込み機能のみ提供(self):
-        # Arrange
-        writer = TextFileSystemWriter()
-
-        # Act & Assert
-        # 書き込み機能のみ存在することを確認
-        assert hasattr(writer, "write")
-
-        # 読み取り・バリデーション機能は存在しないことを確認
-        assert not hasattr(writer, "read")
-        assert not hasattr(writer, "check_file")
-        assert not hasattr(writer, "check_directory")

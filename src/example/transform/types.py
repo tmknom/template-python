@@ -1,6 +1,13 @@
 """Transform向けドメインモデル定義"""
 
 from dataclasses import dataclass
+from typing import NewType
+
+SrcText = NewType("SrcText", str)
+"""ソーステキスト"""
+
+DstText = NewType("DstText", str)
+"""デスティネーションテキスト"""
 
 
 @dataclass(frozen=True)

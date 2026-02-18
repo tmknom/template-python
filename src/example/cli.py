@@ -65,7 +65,7 @@ def main() -> None:
     try:
         app()
     except Exception as e:
-        ErrorHandler(e).handle()
+        ErrorHandler().handle(e)
         sys.exit(1)
 
 

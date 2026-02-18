@@ -5,7 +5,6 @@ sys.exitは実行せず、ログ出力のみを担当する。
 """
 
 import logging
-from typing import Any
 
 from example.foundation.error.error import ApplicationError
 
@@ -20,37 +19,15 @@ class ErrorHandler:
         - ログ出力のみを担当（例外の再送出や変換は行わない）
     """
 
-    def __init__(
-        self,
-        exception: Exception,
-        log_level: int = logging.ERROR,
-        context: dict[str, Any] | None = None,
-    ):
-        """初期化
-
-        Args:
-            exception: 処理対象の例外オブジェクト
-            log_level: ログレベル（デフォルト: ERROR）
-            context: 追加のコンテキスト情報（例: request_id、http_method、endpoint、error_category）
-        """
-        self.exception = exception
-        self.log_level = log_level
-        self.context = context or {}
-
-    def handle(self) -> None:
+    def handle(self, exception: Exception) -> None:
         """例外処理を実行"""
-        if isinstance(self.exception, ApplicationError):
-            msg = self._format_application_error(self.exception)
+        if isinstance(exception, ApplicationError):
+            msg = self._format_application_error(exception)
         else:
-            msg = self._format_general_exception(self.exception)
-
-        # コンテキスト情報を追加
-        if self.context:
-            context_parts = [f"{key}={value}" for key, value in self.context.items()]
-            msg = f"{msg} {' '.join(context_parts)}"
+            msg = self._format_general_exception(exception)
 
         logger = logging.getLogger(__name__)
-        logger.log(self.log_level, msg, exc_info=True)
+        logger.log(logging.ERROR, msg, exc_info=True)
 
     def _format_application_error(self, exception: ApplicationError) -> str:
         """ApplicationError用のログメッセージを生成

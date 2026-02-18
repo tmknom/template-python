@@ -9,12 +9,21 @@ Identify and read task-related sections below:
 - Modify `src/example/` → Read **Architecture** and **Source Code** sections
 - Modify `tests/` → Read **Architecture** section (testing patterns) and **Python Development** section (packaging, comments)
 - Modify `docs/design/` → Read **Architecture** and **Python Development** sections
+- Modify `docs/specs/` → Read **Architecture** section and the target **Specifications** section
 - Modify `Makefile` → Read **Development Workflow** section
 - Modify `CLAUDE.md` or `llms.txt` → Read **Project Configuration** section
 
 ## Architecture
 
 - [Architecture design](docs/design/architecture.md): Layered architecture, Composition Root + Orchestrator pattern, Onion Architecture with Protocol-based DI, type design, error handling, and logging - Use when understanding component relationships, adding new features, evaluating design decisions, or implementing new packages
+- [specs/ documentation design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when creating or updating specs/ documents, understanding why specs/ exists, or reviewing synchronization requirements
+
+## Specifications
+
+### transform
+
+- [requirements](docs/specs/transform/requirements.md): Functional and quality requirements for the transform package — text file reading, line numbering, datetime header, and result statistics - Use when understanding what the transform package must do, verifying implementation correctness, or reviewing acceptance criteria
+- [design](docs/specs/transform/design.md): Component structure, processing flow, design decisions (thin wrappers, SrcText/DstText, Fake-based testing), and change pattern guide for the transform package - Use when adding new components, changing transform logic, understanding design rationale, or identifying files affected by a change
 
 ## Source Code
 

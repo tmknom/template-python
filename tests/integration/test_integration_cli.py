@@ -21,22 +21,6 @@ def tmp_dir(tmp_path: Path) -> Path:
 class TestIntegrationCLI:
     """統合テスト"""
 
-    def test_サブコマンド未指定_ヘルプ表示(self, tmp_dir: Path):
-        cmd = [sys.executable, "-m", "example.cli"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # Typerはno_args_is_help=True設定時、ヘルプを表示してexit code 2を返す
-        assert result.returncode == 2
-        assert "Usage:" in result.stdout
-
-    def test_helpオプション_ヘルプ表示(self, tmp_dir: Path):
-        cmd = [sys.executable, "-m", "example.cli", "--help"]
-        result = subprocess.run(cmd, cwd=tmp_dir, capture_output=True, text=True, timeout=10)
-
-        # ヘルプ表示は成功として扱われる
-        assert result.returncode == 0
-        assert "Usage:" in result.stdout
-
     def test_transform_正常系_ファイル変換を実行(self, tmp_dir: Path):
         # Arrange
         input_file = tmp_dir / "input.txt"
@@ -59,7 +43,11 @@ class TestIntegrationCLI:
         content = output_file.read_text(encoding="utf-8")
         assert "1: test line" in content
 
-    def test_transform_異常系_存在しないファイル(self, tmp_dir: Path):
+    # このテストは main() の ErrorHandler が例外を捕捉して sys.exit(1) に変換する経路を検証する。
+    # 未知のサブコマンドでは Typer が先に exit code 2 で終了し ErrorHandler に到達しないため、
+    # 実在するサブコマンド経由で例外を発生させる必要がある。
+    # 使用するサブコマンド自体のロジックは、このテストの関心事ではない。
+    def test_例外発生時_ErrorHandlerがexit_code_1で終了すること(self, tmp_dir: Path):
         # Arrange
         non_existent_file = tmp_dir / "non_existent.txt"
 

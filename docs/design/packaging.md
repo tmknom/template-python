@@ -7,57 +7,52 @@
 
 ## テストディレクトリの `__init__.py`
 
-### 原則: 作成しない
+### 原則: 空ファイルで配置する
 
-`tests/` 配下に `__init__.py` は作成しない。
+`tests/` 配下に `__init__.py` は空ファイル（コメントなし、docstringなし）で配置する。
 
 ### 理由
 
-- pytestはテスト収集にパッケージ化を要求しない
-- `__init__.py` があると `tests.*` という名前空間が成立し、意図しない import 経路が生まれる
-- `tests.config` と `example.config` のような名前空間衝突のリスクがある
-- 実行方法（`pytest` の実行ディレクトリ、`PYTHONPATH`、`-m pytest` 等）で挙動差が出やすくなる
+- パッケージ固有の Fake・補助クラスをサブディレクトリに配置し、絶対 import で参照できる
+- `sys.path` 操作や `conftest.py` への fixture 集約が不要になる
+- 絶対 import により、どのパッケージの補助コードかが明確になる
 
-### LLM による自動生成への対処
+### テスト補助コード（Fake クラス）
 
-LLM（コード生成AI）が `tests/__init__.py` を自動生成する場合がある。
-生成された場合は削除する。
+テスト補助コード（InMemory 実装など）は対象パッケージのテストディレクトリに配置する。
 
-相対 import のために `__init__.py` が必要と判断された場合でも、
-`conftest.py` の fixture または `sys.path` 操作（テスト補助コードセクション参照）で解決する。
+#### 方針A（推奨）: パッケージ専用の fakes.py に集約
 
-### テスト補助コード
-
-テスト補助コード（ヘルパー、ファクトリーなど）は以下の方法で共有する。
-
-#### 方針A（推奨）: conftest.py の fixture に集約
-
-テスト補助ロジックは `conftest.py` に fixture として定義する。
-補助コードが増えた場合も、まず fixture への集約を検討する。
-
-#### 方針B: tests/ 直下にモジュールとして配置
-
-fixture では扱いにくいユーティリティクラス等は `tests/` 直下にモジュールとして配置する。
-`conftest.py` で `sys.path` に `tests/` ディレクトリを追加し、直接 import する。
+Protocol 準拠の InMemory 実装は、各テストパッケージの `fakes.py` に定義する。
+`__init__.py` によるパッケージ化と `pythonpath` へのプロジェクトルート追加により、絶対 import で参照できる。
 
 ```python
-# tests/conftest.py
-import sys
+# tests/unit/test_transform/fakes.py
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent))
+class InMemoryFsReader:
+    def __init__(self, content: str = ""):
+        self.content = content
+        self.read_path: Path | None = None
+
+    def read(self, file_path: Path) -> str:
+        self.read_path = file_path
+        return self.content
 ```
 
 テストコードからは以下の形式で import する:
 
 ```python
-from in_memory_fs import InMemoryWriter
+from tests.unit.test_transform.fakes import InMemoryFsReader
 ```
 
 Constraints:
-    - テスト補助モジュールは `tests/` 直下にフラットに配置する
-    - サブディレクトリ（`tests/helpers/` 等）は作成しない
-    - ファイルが増えて散らかる場合は、fixture への集約を優先する
+    - `fakes.py` はパッケージ専用とし、他パッケージと共有しない
+    - 共有が必要になった場合は設計を見直す
+
+#### 方針B: conftest.py の fixture に集約
+
+テスト全体で共有する補助ロジックは `conftest.py` に fixture として定義する。
 
 ## プロダクションコードの `__init__.py`
 
@@ -82,13 +77,14 @@ docstring方針は [comment.md](comment.md) を参照。
 
 | 設定 | 値 | 対応する方針 |
 |------|-----|-------------|
-| `pythonpath` | `["src"]` | `tests` を含めず、テストコードのパッケージ化を防止 |
+| `pythonpath` | `["src", "."]` | `src/` 配下と `tests/` 配下を絶対 import で参照できるようにする |
 | `testpaths` | `["tests"]` | テスト検索パス（Python import パスではない） |
 
 `pythonpath` は pytest 7.0+ のビルトイン機能であり、追加プラグインは不要。
 プロジェクト標準は `pyproject.toml` の `[tool.pytest.ini_options]` セクションの設定を正とする。
 
-`pythonpath` に `tests` を含めないことで、テストコード内での相対 import を防ぎ、`tests.*` という名前空間の成立を抑制する。これにより、上記「テストディレクトリの `__init__.py`」セクションで説明した名前空間衝突のリスクを回避できる。
+`"."` （プロジェクトルート）を `pythonpath` に追加することで、`tests.unit.test_transform.fakes` のような絶対 import が解決できる。
+`__init__.py` によりテストディレクトリがパッケージとして認識されるため、各 `fakes.py` を絶対パスで参照できる。
 
 ### ruff（`__init__.py` 関連）
 
@@ -102,10 +98,10 @@ docstring方針は [comment.md](comment.md) を参照。
 | 設定 | 値 | 対応する方針 |
 |------|-----|-------------|
 | `executionEnvironments` の `src` | `extraPaths = ["src"]` | プロダクションコードの import 解決 |
-| `executionEnvironments` の `tests` | `extraPaths = ["src", "."]` | テストから src 配下と tests/ 直下のヘルパーモジュールにアクセス |
+| `executionEnvironments` の `tests` | `extraPaths = ["src", "."]` | テストから src 配下にアクセス |
 
-`extraPaths` の `"."` はプロジェクトルートを import パスに追加する設定である。
-これにより `tests/` 直下に配置したヘルパーモジュールを pyright が解決できる。
+`__init__.py` によるパッケージ化と `"."` の追加により、テストパッケージの絶対 import は pyright が解決する。
+`"."` はプロジェクトルートを import パスに追加する設定であり、pytest の `pythonpath` 設定と対応する。
 ルート直下にプロダクション用モジュールは配置しないこと（プロダクションコードは `src/` 配下に限定する）。
 
 ### 設定ファイル

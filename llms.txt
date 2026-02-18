@@ -1,0 +1,49 @@
+# Documentation Index
+
+Index for discovering relevant documents during Plan and Explore execution
+
+## Usage
+
+Identify and read task-related sections below:
+
+- Modify `src/example/` → Read **Architecture** and **Source Code** sections
+- Modify `tests/` → Read **Architecture** section (testing patterns) and **Python Development** section (packaging, comments)
+- Modify `docs/design/` → Read **Architecture** and **Python Development** sections
+- Modify `Makefile` → Read **Development Workflow** section
+- Modify `CLAUDE.md` or `llms.txt` → Read **Project Configuration** section
+
+## Architecture
+
+- [Architecture design](docs/design/architecture.md): Layered architecture, Composition Root + Orchestrator pattern, Onion Architecture with Protocol-based DI, type design, error handling, and logging - Use when understanding component relationships, adding new features, evaluating design decisions, or implementing new packages
+
+## Source Code
+
+### CLI Layer
+
+- [CLI entry point](src/example/cli.py): Typer-based CLI that assembles Config, Context, and OrchestratorProvider then delegates to Orchestrator - Use when adding new commands, understanding the application entry flow, or reviewing how Config/Context/Provider are wired together
+
+### Business Logic Layer
+
+- [Transform feature](src/example/transform/): Reference feature package with Context, Orchestrator, OrchestratorProvider (Composition Root), Reader, Transformer, Writer, and Result types - Use when adding new feature packages, understanding the Orchestrator-Provider-Context pattern, or reviewing the canonical package structure
+
+### Foundation Layer
+
+- [Error handling](src/example/foundation/error/): ApplicationError base class and ErrorHandler - Use when implementing custom errors, understanding exception flow, or modifying error logging
+- [Filesystem abstraction](src/example/foundation/fs/): Protocol-based file I/O with TextFileSystemReader - Use when adding new I/O operations, implementing Protocol adapters, or understanding the Port/Adapter pattern
+- [Logging](src/example/foundation/log/): `@log` decorator (auto-records args and return values) and LogConfigurator - Use when adding logging to new components, understanding cross-cutting concern implementation, or configuring log output
+- [Base model](src/example/foundation/model/): CoreModel for external data mapping - Use when adding new data models for JSON/YAML input or understanding the boundary validation pattern
+
+## Python Development
+
+- [Comment guidelines](docs/design/comment.md): Docstring and inline comment design - Use when writing or reviewing Python code, understanding module/class/method docstring separation, or applying Google-style docstring conventions
+- [Packaging guidelines](docs/design/packaging.md): Python packaging and test directory design - Use when adding packages, configuring `__init__.py`, understanding test helper placement, or reviewing pytest/pyright configuration
+- [pyproject.toml design](docs/design/pyproject.md): Configuration rationale for build system, linter, and type checker - Use when modifying pyproject.toml settings, understanding ruff/pyright rule choices, or reviewing tool configuration decisions
+
+## Development Workflow
+
+- [Makefile](Makefile): Development commands (sync, fmt, lint, typecheck, test-unit, coverage) - Use when understanding available development commands or modifying the build/test pipeline
+
+## Project Configuration
+
+- [CLAUDE.md](CLAUDE.md): Claude Code project memory and Plan Mode constraints - Use when understanding AI agent behavior rules or modifying project-level memory
+- [llms.txt](llms.txt): This document index (for AI agent discovery) - Use when adding new documentation or restructuring project documents

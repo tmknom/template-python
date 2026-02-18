@@ -6,6 +6,7 @@
 from datetime import datetime
 
 from example.foundation.log import log
+from example.transform.types import DstText, SrcText
 
 
 class TextTransformer:
@@ -18,7 +19,7 @@ class TextTransformer:
         """TextTransformerを初期化"""
 
     @log
-    def transform(self, text: str, current_datetime: datetime) -> str:
+    def transform(self, text: SrcText, current_datetime: datetime) -> DstText:
         """テキストに行番号と日時ヘッダーを付与
 
         Args:
@@ -36,4 +37,4 @@ class TextTransformer:
         output_lines = [str(current_datetime), *numbered_lines]
 
         # 改行区切りのテキストに戻す
-        return "\n".join(output_lines)
+        return DstText("\n".join(output_lines))

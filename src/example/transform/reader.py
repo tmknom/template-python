@@ -7,6 +7,7 @@ from pathlib import Path
 
 from example.foundation.fs import TextFileSystemReaderProtocol
 from example.foundation.log import log
+from example.transform.types import SrcText
 
 
 class TextReader:
@@ -27,7 +28,7 @@ class TextReader:
         self.fs_reader = fs_reader
 
     @log
-    def read(self, path: Path) -> str:
+    def read(self, path: Path) -> SrcText:
         r"""テキストファイルを読み込んで文字列を返す
 
         指定されたファイルパスのファイルを読み込み、
@@ -39,4 +40,4 @@ class TextReader:
         Returns:
             読み込んだ文字列
         """
-        return self.fs_reader.read(path)
+        return SrcText(self.fs_reader.read(path))

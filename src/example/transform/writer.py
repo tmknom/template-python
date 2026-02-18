@@ -7,6 +7,7 @@ from pathlib import Path
 
 from example.foundation.fs import TextFileSystemWriterProtocol
 from example.foundation.log import log
+from example.transform.types import DstText
 
 
 class TextWriter:
@@ -27,7 +28,7 @@ class TextWriter:
         self.fs_writer = fs_writer
 
     @log
-    def write(self, text: str, path: Path) -> None:
+    def write(self, text: DstText, path: Path) -> None:
         """テキストをファイルに保存
 
         指定されたテキストをそのままテキストファイルに保存します。

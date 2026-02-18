@@ -12,33 +12,20 @@ from tests.unit.test_transform.fakes import InMemoryFsReader, InMemoryFsWriter
 class TestTransformOrchestrator:
     """TransformOrchestratorクラスのテスト"""
 
-    def _make_orchestrator(
-        self,
-        fs_reader: InMemoryFsReader,
-        fs_writer: InMemoryFsWriter,
-    ) -> TransformOrchestrator:
-        return TransformOrchestrator(
+    def test_orchestrate_正常系_target_fileを読み込んで変換結果を書き込むこと(self):
+        # Arrange
+        fs_reader = InMemoryFsReader(content="line1\nline2\nline3")
+        fs_writer = InMemoryFsWriter()
+        orchestrator = TransformOrchestrator(
             reader=TextReader(fs_reader),
             transformer=TextTransformer(),
             writer=TextWriter(fs_writer),
         )
-
-    def _make_context(
-        self, *, content: str = ""
-    ) -> tuple[TransformContext, InMemoryFsReader, InMemoryFsWriter]:
-        fs_reader = InMemoryFsReader(content=content)
-        fs_writer = InMemoryFsWriter()
         context = TransformContext(
             target_file=Path("input.txt"),
             tmp_dir=Path("/tmp/output"),
             current_datetime=datetime(2024, 12, 26, 15, 30, 45),
         )
-        return context, fs_reader, fs_writer
-
-    def test_orchestrate_正常系_target_fileを読み込んで変換結果を書き込むこと(self):
-        # Arrange
-        context, fs_reader, fs_writer = self._make_context(content="line1\nline2\nline3")
-        orchestrator = self._make_orchestrator(fs_reader, fs_writer)
 
         # Act
         result = orchestrator.orchestrate(context)

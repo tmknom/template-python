@@ -6,6 +6,7 @@ Index for discovering relevant documents during Plan and Explore execution
 
 Identify and read task-related sections below:
 
+- Modify `src/example/config/` → Read **Architecture** section and **Specifications > config** section
 - Modify `src/example/` → Read **Architecture** and **Source Code** sections
 - Modify `tests/` → Read **Architecture** section (testing patterns) and **Python Development** section (packaging, comments)
 - Modify `docs/design/` → Read **Architecture** and **Python Development** sections
@@ -19,6 +20,11 @@ Identify and read task-related sections below:
 - [specs/ documentation design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when creating or updating specs/ documents, understanding why specs/ exists, or reviewing synchronization requirements
 
 ## Specifications
+
+### config
+
+- [requirements](docs/specs/config/requirements.md): Functional and quality requirements for the config package — environment variable loading, path construction, and runtime config composition - Use when understanding what the config package must do, verifying implementation correctness, or reviewing acceptance criteria
+- [design](docs/specs/config/design.md): Component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and change pattern guide - Use when adding new config fields, changing default value logic, understanding design rationale, or identifying files affected by a change
 
 ### transform
 

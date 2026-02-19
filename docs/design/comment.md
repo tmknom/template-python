@@ -546,17 +546,19 @@ def test_read_正常系_ファイル内容を文字列で返す(self, tmp_path: 
 
 ### Arrange/Act/Assertコメント
 
-**原則: 常に書く**
+**原則: 常に書く（ただし内容があるセクションのみ）**
 
-長短を問わず、すべてのテストメソッドに `# Arrange`, `# Act`, `# Assert` コメントを記述する。
+すべてのテストメソッドに `# Arrange`, `# Act`, `# Assert` コメントを記述する。
+ただし、Arrange に記述するコードがない場合は `# Arrange` コメントを省略する。
 
 理由:
 - 「このテストにはArrange/Act/Assertコメントが必要か」という判断コストを排除
 - 一貫性を保つことで、コードレビューや保守が容易になる
 - テストの構造が明確になり、可読性が向上
+- 内容のない `# Arrange` は視覚的ノイズになるため省略する
 
 ```python
-# ✅ 良い例: 短いテストでも常に記述
+# ✅ 良い例: Arrange に内容があれば記述
 def test_provide_正常系_TransformOrchestratorインスタンスを返す(self):
     # Arrange
     provider = TransformOrchestratorProvider()
@@ -566,6 +568,15 @@ def test_provide_正常系_TransformOrchestratorインスタンスを返す(self
 
     # Assert
     assert isinstance(result, TransformOrchestrator)
+
+
+# ✅ 良い例: Arrange に内容がなければ省略
+def test_from_base_dir_正常系_tmpディレクトリを生成(self, tmp_path: Path):
+    # Act
+    result = PathConfig.from_base_dir(tmp_path)
+
+    # Assert
+    assert result.tmp_dir == tmp_path / "tmp"
 ```
 
 **例外: Act & Assert が同時の場合**

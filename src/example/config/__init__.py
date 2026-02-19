@@ -3,8 +3,10 @@
 公開APIは `example.config` から import すること(`__all__` のみ互換性対象)。
 """
 
-from example.config.path import PathConfig
+from example.config.app import AppConfig
+from example.config.env_var import EnvVarConfig
 
 __all__ = [
-    "PathConfig",
+    "AppConfig",
+    "EnvVarConfig",
 ]

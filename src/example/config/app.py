@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from example.config.env_var import EnvVarConfig
+from example.config.env_var import EnvVarConfig, LogLevel
 from example.config.path import PathConfig
 
 
@@ -20,16 +20,19 @@ class AppConfig:
     環境変数が設定されていればその値を優先し、未設定の場合はデフォルト値を使用する。
     """
 
+    log_level: LogLevel
     tmp_dir: Path
 
     @classmethod
-    def build(cls, env: EnvVarConfig) -> AppConfig:
+    def build(cls, env: EnvVarConfig, *, log_level: LogLevel | None = None) -> AppConfig:
         """EnvVarConfig から AppConfig を生成する
 
         Args:
             env: 環境変数設定
+            log_level: CLIオプションによるログレベル上書き（None の場合は env.log_level を使用）
         """
+        effective_log_level = log_level if log_level is not None else env.log_level
         tmp_dir = (
             env.tmp_dir if env.tmp_dir is not None else PathConfig.from_base_dir(Path.cwd()).tmp_dir
         )
-        return AppConfig(tmp_dir=tmp_dir)
+        return AppConfig(log_level=effective_log_level, tmp_dir=tmp_dir)

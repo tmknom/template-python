@@ -46,8 +46,9 @@ tests/unit/test_config/
 
 1. `EnvVarConfig` を生成し、環境変数を読み込む（バリデーション含む）
 2. `AppConfig` のファクトリーメソッドに `EnvVarConfig` を渡し、設定を合成する
-3. 環境変数による上書きがない項目は `PathConfig` が生成したデフォルト値で補完する
-4. 生成した `AppConfig` を CLI の Context へ格納し、各コマンドへ渡す
+3. CLIオプションが指定されていれば環境変数の値を上書きする（コマンドライン引数 > 環境変数 > デフォルト値）
+4. 環境変数による上書きがない項目は `PathConfig` が生成したデフォルト値で補完する
+5. 生成した `AppConfig` を CLI の Context へ格納し、各コマンドへ渡す
 
 ### 設定値の参照
 
@@ -87,6 +88,14 @@ tests/unit/test_config/
 
 **トレードオフ**: `pydantic-settings` への依存が生まれる。未知のキーを拒否する設定により、将来的な設定追加時にはコードの変更が必須になる。
 
+### サブコマンド専用 CLIオプションの処理
+
+**設計の意図**: `transform` サブコマンド専用の `--tmp-dir` オプションは、`AppConfig.build()` を経由せず、`transform` 関数内で直接優先度を解決する。
+
+**なぜそう設計したか**: `--log-level` はグローバルな `main_callback` で `AppConfig` の構築と同時に解決されるが、`--tmp-dir` は `AppConfig` 構築後に呼ばれる `transform` 関数で処理される。`AppConfig.build()` にサブコマンド専用オプションを追加しても再構築の仕組みがなく、デッドコードになる。優先度解決ロジックを CLI 層のサブコマンド関数に置くことで、責務の所在が明確になる。
+
+**トレードオフ**: 将来 `--tmp-dir` を複数コマンドで使う場合、各コマンド関数に同じ優先度解決ロジックが散在する。その時点で `AppConfig.build()` への移行を検討する。
+
 ## 制約と注意点
 
 ### 生成タイミング
@@ -123,6 +132,7 @@ tests/unit/test_config/
 - **新しい環境変数の追加**: `EnvVarConfig` にフィールドを追加し、必要に応じて `AppConfig` に対応するフィールドを追加する
 - **新しいパス情報の追加**: `PathConfig` に新しいパス構築ロジックを追加し、`AppConfig` に反映する
 - **設定ソースの追加**: `pydantic-settings` は `.env` ファイルや他のソースにも対応しており、`EnvVarConfig` の設定を拡張することで対応できる
+- **CLIオプションの追加**: `AppConfig.build()` に keyword-only 引数を追加し、`cli.py` の `main_callback` に対応する Typer Option を追加する
 
 ### 拡張時の注意点
 
@@ -140,6 +150,8 @@ tests/unit/test_config/
 | ログレベルの許容値を変更 | `EnvVarConfig` の `LogLevel` 型（`Literal` の値を追加・削除） |
 | デフォルトパスの構築ルールを変更 | `PathConfig` |
 | 公開 API を追加 | `__init__.py`（内部コンポーネントの公開は原則行わない） |
+| CLIオプションで設定を追加 | `AppConfig.build()`（keyword-only 引数追加・合成ロジック追加）、`cli.py`（Typer Option 追加） |
+| サブコマンド専用 CLIオプションで設定を上書き | `cli.py`（サブコマンド関数に Typer Option 追加・優先度解決ロジック追加） |
 
 ## 影響範囲
 
@@ -148,7 +160,7 @@ config パッケージを変更した場合、以下の呼び出し元に影響�
 | 呼び出し元 | ファイル | 影響する変更 |
 |---|---|---|
 | CLI エントリーポイント | `src/example/cli.py` | `EnvVarConfig`・`AppConfig` のインターフェース変更全般 |
-| ログ設定 | `src/example/cli.py` | `EnvVarConfig.log_level` の型変更・デフォルト値変更・許容値の削除（`LogConfigurator` へ直接渡している） |
+| ログ設定 | `src/example/cli.py` | `AppConfig.log_level` の型変更・デフォルト値変更・許容値の削除（`LogConfigurator` へ `AppConfig` 経由で渡している） |
 | transform コマンド | `src/example/cli.py` | `AppConfig.tmp_dir` のインターフェース変更 |
 
 ## 関連ドキュメント

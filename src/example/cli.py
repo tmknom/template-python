@@ -26,7 +26,7 @@ from typing import Annotated
 
 import typer
 
-from example.config import PathConfig
+from example.config import AppConfig, EnvVarConfig
 from example.foundation.error import ErrorHandler
 from example.foundation.log import LogConfigurator
 from example.transform import TransformContext, TransformOrchestratorProvider
@@ -38,21 +38,25 @@ app = typer.Typer(no_args_is_help=True)
 @app.callback()
 def main_callback(ctx: typer.Context) -> None:
     """各コマンドの共通処理"""
+    env = EnvVarConfig()
+    ctx.ensure_object(dict)
+    ctx.obj = AppConfig.build(env)
     app_name = ctx.invoked_subcommand or "example"
-    log_configurator = LogConfigurator(app_name=app_name, level="INFO")
+    log_configurator = LogConfigurator(app_name=app_name, level=env.log_level)
     log_path = log_configurator.configure_plain()
     logger.info("Starting %s command; log file: %s", app_name, log_path)
 
 
 @app.command()
 def transform(
+    ctx: typer.Context,
     target_file: Annotated[Path, typer.Argument(help="ファイルパス")],
 ) -> None:
     """テキストファイルを読み込み、行番号を付与して出力"""
-    path_config = PathConfig.from_base_dir(Path.cwd())
+    config: AppConfig = ctx.obj
     context = TransformContext(
         target_file=target_file,
-        tmp_dir=path_config.tmp_dir,
+        tmp_dir=config.tmp_dir,
         current_datetime=datetime.now(),
     )
     orchestrator = TransformOrchestratorProvider().provide()

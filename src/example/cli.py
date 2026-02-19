@@ -27,6 +27,7 @@ from typing import Annotated
 import typer
 
 from example.config import AppConfig, EnvVarConfig
+from example.config.env_var import LogLevel
 from example.foundation.error import ErrorHandler
 from example.foundation.log import LogConfigurator
 from example.transform import TransformContext, TransformOrchestratorProvider
@@ -36,13 +37,20 @@ app = typer.Typer(no_args_is_help=True)
 
 
 @app.callback()
-def main_callback(ctx: typer.Context) -> None:
+def main_callback(
+    ctx: typer.Context,
+    log_level: Annotated[
+        LogLevel | None,
+        typer.Option("--log-level", help="ログレベル (CRITICAL/ERROR/WARNING/INFO/DEBUG)"),
+    ] = None,
+) -> None:
     """各コマンドの共通処理"""
     env = EnvVarConfig()
     ctx.ensure_object(dict)
-    ctx.obj = AppConfig.build(env)
+    ctx.obj = AppConfig.build(env, log_level=log_level)
+    config: AppConfig = ctx.obj
     app_name = ctx.invoked_subcommand or "example"
-    log_configurator = LogConfigurator(app_name=app_name, level=env.log_level)
+    log_configurator = LogConfigurator(app_name=app_name, level=config.log_level)
     log_path = log_configurator.configure_plain()
     logger.info("Starting %s command; log file: %s", app_name, log_path)
 
@@ -51,12 +59,16 @@ def main_callback(ctx: typer.Context) -> None:
 def transform(
     ctx: typer.Context,
     target_file: Annotated[Path, typer.Argument(help="ファイルパス")],
+    tmp_dir: Annotated[
+        Path | None,
+        typer.Option("--tmp-dir", help="一時ディレクトリパス"),
+    ] = None,
 ) -> None:
     """テキストファイルを読み込み、行番号を付与して出力"""
     config: AppConfig = ctx.obj
     context = TransformContext(
         target_file=target_file,
-        tmp_dir=config.tmp_dir,
+        tmp_dir=tmp_dir if tmp_dir is not None else config.tmp_dir,
         current_datetime=datetime.now(),
     )
     orchestrator = TransformOrchestratorProvider().provide()

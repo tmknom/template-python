@@ -2,7 +2,7 @@
 
 [transform パッケージ要件定義](./requirements.md) に基づいた基本設計を説明します。
 
-## 1. アーキテクチャパターン
+## アーキテクチャパターン
 
 [Pythonアーキテクチャ設計](../../design/architecture.md) に記載のパターンを採用している。
 
@@ -11,9 +11,9 @@
 - **Context パターン**: コマンド引数・環境設定（パスなど）・ランタイム情報（現在日時）などの実行時パラメータは、Context にカプセル化して Orchestrator へ渡す
 - **型設計**: 値オブジェクトでは dataclass や NewType などを使い分け、Types分離で循環依存回避
 
-## 2. コンポーネント構成
+## コンポーネント構成
 
-### 2.1 主要コンポーネント
+### 主要コンポーネント
 
 | コンポーネント | クラス名 | 役割 |
 |---|---|---|
@@ -26,7 +26,7 @@
 | 変換結果 | `TransformResult` | 変換処理の結果情報（値オブジェクト） |
 | テキスト型 | `SrcText` / `DstText` | 入力・出力テキストを区別する NewType |
 
-### 2.2 ファイルレイアウト
+### ファイルレイアウト
 
 #### プロダクションコード
 
@@ -56,9 +56,9 @@ tests/unit/test_transform/
 └── test_writer.py    # TextWriter のテスト
 ```
 
-## 3. 処理フロー
+## 処理フロー
 
-### 3.1 全体フロー
+### 全体フロー
 
 全体の処理フローは `TransformOrchestrator` が担います。
 
@@ -66,7 +66,7 @@ tests/unit/test_transform/
 2. 読み込んだテキストを変換する（`TextTransformer`）
 3. 指定したディレクトリへ、変換済みテキストを出力する（`TextWriter`）
 
-### 3.2 変換ロジック
+### 変換ロジック
 
 テキストの変換ロジックは `TextTransformer` が担います。
 
@@ -81,9 +81,9 @@ tests/unit/test_transform/
   2: world
 ```
 
-## 4. 固有の設計判断
+## 固有の設計判断
 
-### 4.1 薄いラッパーとしての TextReader / TextWriter
+### 薄いラッパーとしての TextReader / TextWriter
 
 **設計の意図**: `TextReader` と `TextWriter` は foundation パッケージの Protocol への委譲のみを行い、例外処理やデータ変換を行わない。
 
@@ -91,19 +91,19 @@ tests/unit/test_transform/
 
 **トレードオフ**: 例外は基盤パッケージから直接呼び出し元まで伝播するため、エラーの意味づけ（ドメイン例外への変換）が必要な場合は別途対処が必要になる。
 
-### 4.2 変換結果に元テキストの行数を使用
+### 変換結果に元テキストの行数を使用
 
 **設計の意図**: `TransformResult.length` には変換後のテキスト行数ではなく、入力テキストの行数を格納する。
 
 **なぜそう設計したか**: 変換後テキストには日時ヘッダー行が追加されるため、変換後の行数は入力行数 + 1 となる。呼び出し元が「いくつのテキスト行を変換したか」を知りたい場合、意味的に正しいのは入力テキストの行数である。
 
-### 4.3 SrcText / DstText による入出力テキストの型分離
+### SrcText / DstText による入出力テキストの型分離
 
 **設計の意図**: 変換前後のテキストを NewType で `SrcText`（入力）と `DstText`（出力）に区別し、各メソッドのシグネチャに反映する。
 
 **なぜそう設計したか**: 変換前後のテキストはいずれも `str` だが意味的に異なる値である。型で区別することで誤った受け渡しを、静的解析で検出できる。ランタイムでは通常の `str` と同一のため、追加コストはない。
 
-### 4.4 テストコード: Fake による副作用の分離
+### テストコード: Fake による副作用の分離
 
 **設計の意図**: テストでは実際のファイルシステムにアクセスせず、`fakes.py` に定義された Fake（foundation の FS Protocol のスタブ実装）を使用する。
 
@@ -111,21 +111,21 @@ tests/unit/test_transform/
 
 **制約**: 新規テストを追加する場合は `fakes.py` の Fake を使うこと。独自のモックやパッチを使ってファイルシステムをスタブにしてはならない。Fake の実装を変更・拡張する場合も `fakes.py` に集約する。
 
-## 5. 制約と注意点
+## 制約と注意点
 
-### 5.1 公開 API の制限
+### 公開 API の制限
 
 公開 API は `TransformContext` と `TransformOrchestratorProvider` のみ（`__all__` で明示）。内部コンポーネントは外部パッケージからの import を想定しない。
 
-### 5.2 出力パスの決定ルール
+### 出力パスの決定ルール
 
 出力ファイルパスは `TransformContext.tmp_dir / TransformContext.target_file.name` で決定する。入力ファイルと同じファイル名で、出力先ディレクトリ配下に配置される。
 
-### 5.3 TransformContext の組み立て責務
+### TransformContext の組み立て責務
 
 `TransformContext` の各フィールドは、transform パッケージ外の呼び出し元が組み立てて渡す。フィールドごとに出所が異なり、CLI 引数・設定値・ランタイム情報といった異なるソースをまとめて Orchestrator へ渡すのが Context パターンの役割である。transform パッケージ自体はフィールドの取得方法に関知しない。
 
-## 6. 変更パターン別ガイド
+## 変更パターン別ガイド
 
 よくある変更ケースと、対応するファイルの道筋を示す。
 
@@ -137,7 +137,7 @@ tests/unit/test_transform/
 | I/O の実装を差し替え | `reader.py` / `writer.py` と `provider.py` | foundation の Protocol に準拠した実装を用意し、Provider で組み立て直す |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
 
-## 7. 影響範囲
+## 影響範囲
 
 transform パッケージを変更した場合、以下の呼び出し元に影響が及ぶ。
 
@@ -145,7 +145,7 @@ transform パッケージを変更した場合、以下の呼び出し元に影�
 |---|---|---|
 | CLI の transform コマンド | `src/example/cli.py` | `TransformContext` のフィールド追加・変更、`TransformOrchestratorProvider` のインターフェース変更 |
 
-## 8. 関連ドキュメント
+## 関連ドキュメント
 
 - [transform パッケージ要件定義](./requirements.md): transform パッケージの機能要件や前提条件
 - [Python アーキテクチャ設計](../../design/architecture.md): プロジェクト共通の設計思想

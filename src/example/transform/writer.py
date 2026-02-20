@@ -5,8 +5,8 @@
 
 from pathlib import Path
 
-from example.foundation.fs import TextFileSystemWriterProtocol
 from example.foundation.log import log
+from example.protocol.fs import TextFileSystemWriterProtocol
 from example.transform.types import DstText
 
 

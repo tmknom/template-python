@@ -4,16 +4,10 @@
 """
 
 from example.foundation.fs.error import FileSystemError
-from example.foundation.fs.protocol import (
-    TextFileSystemReaderProtocol,
-    TextFileSystemWriterProtocol,
-)
 from example.foundation.fs.text import TextFileSystemReader, TextFileSystemWriter
 
 __all__ = [
     "FileSystemError",
     "TextFileSystemReader",
-    "TextFileSystemReaderProtocol",
     "TextFileSystemWriter",
-    "TextFileSystemWriterProtocol",
 ]

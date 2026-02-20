@@ -70,10 +70,11 @@
 src/myapp/
 ├── <config>/                # 環境設定（CLI層が読み込む）
 │   └── path.py              #   PathConfig（frozen dataclass）
+├── <protocol>/              # OnionアーキテクチャのPort定義（横断的共有Protocol）
+│   └── fs.py                #   TextFileSystemReaderProtocol / TextFileSystemWriterProtocol
 ├── <foundation>/            # 基盤パッケージ（横断的機能）
 │   ├── error/               #   エラー処理（ApplicationError, ErrorHandler）
 │   ├── fs/                  #   ファイルシステム
-│   │   ├── protocol.py      #     差し替えポイント定義（Onion の Port ではなく基盤内部の抽象IF）
 │   │   └── text.py          #     Adapter実装（TextFileSystemReader等）
 │   ├── log/                 #   ロギング（@log, LogConfigurator）
 │   └── model/               #   データモデル基盤（CoreModel）
@@ -91,8 +92,9 @@ src/myapp/
 
 | パッケージ | 置くもの | 置かないもの |
 |----------|--------|------------|
-| `<foundation>/error/` | ApplicationError基底クラス、ErrorHandler、機能固有のXxxError | ビジネスロジック固有のバリデーション |
-| `<foundation>/fs/` | 基盤内部の差し替えポイント定義、Adapter実装 | ビジネスロジック固有のProtocol（それは `<feature>/` に置く） |
+| `<protocol>/` | OnionのPort定義（複数機能から共有されるProtocol）（例: `TextFileSystemReaderProtocol`） | 機能固有のProtocol、Adapter実装 |
+| `<foundation>/error/` | ApplicationError基底クラス、ErrorHandler | 機能固有のXxxError、ビジネスロジック固有のバリデーション |
+| `<foundation>/fs/` | Adapter実装のみ | ビジネスロジック固有のProtocol（それは `<feature>/` か `<protocol>/` に置く） |
 | `<foundation>/log/` | @logデコレータ、LogConfigurator | アプリケーション固有のログフォーマット |
 | `<foundation>/model/` | CoreModel（Pydantic基底クラス） | ビジネスロジック固有のモデル |
 | `<feature>/` | Context、Result、薄いラッパー、Orchestrator、Provider | 外部ライブラリへの直接依存、ドメイン変換（正規化・集約・検証ルールはOrchestrator/Processorへ） |
@@ -130,7 +132,7 @@ src/myapp/
 - Provider（静的な依存グラフの構築）と Context（実行時の動的パラメータ）は役割が異なる
 - @log は正常系のみを記録し例外は再送出。例外ログは ErrorHandler が担当
 - 環境設定（config/）は CLI 層で読み込み、Context に組み込まれて Orchestrator に届く
-- OnionのPort（ビジネスロジック側の抽象IF）は `<feature>/protocol.py` に定義する。`<foundation>/fs/protocol.py` は foundation 内部の差し替えポイントであり、OnionのPortではない
+- OnionのPort（ビジネスロジック側の抽象IF）は `<feature>/protocol.py`（機能固有）または `<protocol>/`（複数機能で共有）に定義する
 
 ### 実行時フロー
 
@@ -206,17 +208,7 @@ Protocol はコードベース全体の健全性を守るための積極的な�
 
 ### Protocolの配置ルール
 
-Protocolの定義場所は用途によって決まる:
-
-| Protocol の種別 | 定義する場所 | 具体例 |
-|---------------|------------|--------|
-| **機能固有Protocol**（特定機能のOrchestratorだけが使う） | 機能パッケージ（`<feature>/protocol.py`） | 機能依存のカスタムIF |
-| **複数機能で共有するProtocol** | 最初の利用側 `<feature>/protocol.py` に定義し、複数機能で共有が必要になったとき専用の内側パッケージに移す（foundation ではない） | `TextFileSystemReaderProtocol` |
-| **Adapter（具象実装）** | 常に基盤パッケージ | `TextFileSystemReader`（`<foundation>/fs/text.py`） |
-
-**重要**: `<foundation>/` は Adapter（具象実装）と基盤内部の差し替えポイント定義を置く場所であり、Onion Architecture の Port（ビジネスロジック側の抽象IF）ではない。ビジネスロジック側のProtocolは常に利用側（`<feature>/`）に置く。
-
-**`<foundation>/fs/protocol.py` の位置づけ**: このファイルは foundation 内部向けの差し替えポイント定義（基盤内部の抽象IF）であり、ビジネスロジック側の Port（OnionのPort）とは別物である。Port は常に `<feature>/protocol.py` に定義する。`<foundation>/fs/protocol.py` はあくまで基盤内部の Adapter を差し替えるためのもので、Orchestrator などビジネスロジック層が直接参照するものではない。
+配置ルールの詳細は [protocol パッケージ基本設計](../specs/protocol/design.md) を参照。
 
 **Providerが担う役割**:
 Providerは基盤層の具象クラス（Adapter）を組み立てて、Protocol型としてOrchestratorに注入する唯一の場所。

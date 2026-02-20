@@ -29,30 +29,11 @@ import typer
 from example.config import AppConfig, EnvVarConfig
 from example.config.env_var import LogLevel
 from example.foundation.error import ErrorHandler
-from example.foundation.log import LogConfigurator
+from example.foundation.log import LogConfigurator, log
 from example.transform import TransformContext, TransformOrchestratorProvider
 
 logger = logging.getLogger(__name__)
 app = typer.Typer(no_args_is_help=True)
-
-
-@app.callback()
-def main_callback(
-    ctx: typer.Context,
-    log_level: Annotated[
-        LogLevel | None,
-        typer.Option("--log-level", help="ログレベル (CRITICAL/ERROR/WARNING/INFO/DEBUG)"),
-    ] = None,
-) -> None:
-    """各コマンドの共通処理"""
-    env = EnvVarConfig()
-    ctx.ensure_object(dict)
-    ctx.obj = AppConfig.build(env, log_level=log_level)
-    config: AppConfig = ctx.obj
-    app_name = ctx.invoked_subcommand or "example"
-    log_configurator = LogConfigurator(app_name=app_name, level=config.log_level)
-    log_path = log_configurator.configure_plain()
-    logger.info("Starting %s command; log file: %s", app_name, log_path)
 
 
 @app.command()
@@ -65,7 +46,7 @@ def transform(
     ] = None,
 ) -> None:
     """テキストファイルを読み込み、行番号を付与して出力"""
-    config: AppConfig = ctx.obj
+    config = _get_config(ctx)
     context = TransformContext(
         target_file=target_file,
         tmp_dir=tmp_dir if tmp_dir is not None else config.tmp_dir,
@@ -74,6 +55,52 @@ def transform(
     orchestrator = TransformOrchestratorProvider().provide()
     result = orchestrator.orchestrate(context)
     print(result)
+
+
+@log
+def _get_config(ctx: typer.Context) -> AppConfig:
+    """Typer ContextからAppConfigを取得
+
+    @app.callback() でセットした値を取得する。
+    Typer依存のコードを分散させないため、プライベートメソッドとしてカプセル化する。
+    """
+    return ctx.obj
+
+
+@app.callback()
+def main_callback(
+    ctx: typer.Context,
+    log_level: Annotated[
+        LogLevel | None,
+        typer.Option("--log-level", help="ログレベル (CRITICAL/ERROR/WARNING/INFO/DEBUG)"),
+    ] = None,
+) -> None:
+    """各サブコマンドの事前処理"""
+    config = AppConfig.build(env=EnvVarConfig(), log_level=log_level)
+    _initialize_logger(ctx.invoked_subcommand or "log", config.log_level)
+    _setup_context(ctx, config)
+
+
+def _initialize_logger(app_name: str, log_level: LogLevel) -> None:
+    """ロガーの初期化
+
+    本アプリケーションではプレーンテキスト形式でログを出力する。
+    """
+    log_configurator = LogConfigurator(app_name=app_name, level=log_level)
+    log_path = log_configurator.configure_plain()
+    logger.info("Started %s command", app_name)
+    logger.info("Log file: %s", log_path)
+
+
+@log
+def _setup_context(ctx: typer.Context, config: AppConfig) -> None:
+    """Typer Contextのセットアップ
+
+    グローバルオプションや環境変数から取得した値を、
+    Typer Context経由でサブコマンドへ渡せるようにする。
+    """
+    ctx.ensure_object(dict)
+    ctx.obj = config
 
 
 def main() -> None:

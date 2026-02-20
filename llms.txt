@@ -26,6 +26,11 @@ Identify and read task-related sections below:
 - [requirements](docs/specs/config/requirements.md): Functional and quality requirements for the config package — environment variable loading, path construction, and runtime config composition - Use when understanding what the config package must do, verifying implementation correctness, or reviewing acceptance criteria
 - [design](docs/specs/config/design.md): Component structure (EnvVarConfig / PathConfig / AppConfig), processing flow, design decisions (3-layer separation, pydantic-settings validation, PathConfig as internal component), and change pattern guide - Use when adding new config fields, changing default value logic, understanding design rationale, or identifying files affected by a change
 
+### cli
+
+- [requirements](docs/specs/cli/requirements.md): Functional requirements and CLI interface spec for the cli module — subcommand execution, global/subcommand-specific options, config priority, error handling, and exit codes - Use when understanding what the cli module must do, verifying implementation correctness, or reviewing acceptance criteria
+- [design](docs/specs/cli/design.md): Component structure (app/main_callback/transform/main), two-phase flow (callback→command), design decisions (no business logic, AppConfig in ctx.obj, top-level exception handling), guardrails, and change pattern guide - Use when adding new subcommands, adding CLI options, understanding design rationale, or identifying files affected by a change
+
 ### transform
 
 - [requirements](docs/specs/transform/requirements.md): Functional and quality requirements for the transform package — text file reading, line numbering, datetime header, and result statistics - Use when understanding what the transform package must do, verifying implementation correctness, or reviewing acceptance criteria

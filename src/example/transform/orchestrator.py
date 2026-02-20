@@ -7,7 +7,7 @@ from example.foundation.log import log
 from example.transform.context import TransformContext
 from example.transform.reader import TextReader
 from example.transform.transformer import TextTransformer
-from example.transform.types import TransformResult
+from example.transform.types import TransformedDatetime, TransformResult
 from example.transform.writer import TextWriter
 
 
@@ -18,10 +18,10 @@ class TransformOrchestrator:
         1. TextReaderでファイル読み込み
         2. TextTransformerでテキストを変換
         3. TextWriterで書き込み
-        4. 変換行数を返す
+        4. 実行結果を返す
 
     Returns:
-        TransformResult: 変換した行数を含む実行結果
+        TransformResult: 変換前後のテキスト行数を含む実行結果
     """
 
     def __init__(
@@ -52,16 +52,15 @@ class TransformOrchestrator:
             Transform処理の実行結果
         """
         # テキストファイルを読み込み
-        text = self.reader.read(context.target_file)
+        src_text = self.reader.read(context.target_file)
 
         # テキストファイルを変換
-        output_text = self.transformer.transform(
-            text=text, current_datetime=context.current_datetime
-        )
+        datetime = TransformedDatetime(context.current_datetime)
+        dst_text = self.transformer.transform(text=src_text, datetime=datetime)
 
         # テキストファイルに書き込み
-        output_path = context.tmp_dir / context.target_file.name
-        self.writer.write(output_text, output_path)
+        dst_path = context.tmp_dir / context.target_file.name
+        self.writer.write(dst_text, dst_path)
 
-        # 結果を返す（行数は元のテキストの行数）
-        return TransformResult(length=len(text.splitlines()))
+        # 実行結果を返す
+        return TransformResult(src_length=src_text.length(), dst_length=dst_text.length())

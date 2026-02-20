@@ -34,8 +34,8 @@ class TestIntegrationCLI:
 
         # Assert
         assert result.returncode == 0
-        assert "TransformResult" in result.stdout
-        assert "length=" in result.stdout
+        assert "src_length=" in result.stdout
+        assert "dst_length=" in result.stdout
 
         # 出力ファイルが作成されていることを確認
         output_file = tmp_output_dir / "input.txt"
@@ -73,7 +73,7 @@ class TestIntegrationCLI:
 
         # Assert
         assert result.returncode == 0
-        assert "TransformResult" in result.stdout
+        assert "src_length=" in result.stdout
         assert (cli_tmp_dir / "input.txt").exists()
         assert not (env_tmp_dir / "input.txt").exists()
 

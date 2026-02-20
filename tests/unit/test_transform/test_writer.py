@@ -19,5 +19,5 @@ class TestTextWriter:
         writer.write(text, path)
 
         # Assert
-        assert fs_writer.written_text == text
+        assert fs_writer.written_text == str(text)
         assert fs_writer.written_path == path

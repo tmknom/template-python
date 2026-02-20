@@ -9,7 +9,7 @@
 - **Composition Root + Orchestrator パターン**: 依存関係の組み立て（Provider）と処理フロー制御（Orchestrator）の分離
 - **オニオンアーキテクチャ**: ファイルシステム操作を Protocol で抽象化し、副作用を分離
 - **Context パターン**: コマンド引数・環境設定（パスなど）・ランタイム情報（現在日時）などの実行時パラメータは、Context にカプセル化して Orchestrator へ渡す
-- **型設計**: 値オブジェクトでは dataclass や NewType などを使い分け、Types分離で循環依存回避
+- **型設計**: 値オブジェクトでは CoreModel (Pydantic)・dataclass・NewType を使い分け、Types分離で循環依存回避
 
 ## コンポーネント構成
 
@@ -24,7 +24,8 @@
 | テキスト書き込み | `TextWriter` | ファイル書き込みを foundation パッケージへの委譲 |
 | 実行コンテキスト | `TransformContext` | 変換処理の実行時パラメータ（値オブジェクト） |
 | 変換結果 | `TransformResult` | 変換処理の結果情報（値オブジェクト） |
-| テキスト型 | `SrcText` / `DstText` | 入力・出力テキストを区別する NewType |
+| テキスト型 | `SrcText` / `DstText` | 入力・出力テキストを区別する frozen dataclass |
+| 変換日時型 | `TransformedDatetime` | テキスト変換日時を表す NewType |
 
 ### ファイルレイアウト
 
@@ -38,7 +39,7 @@ src/example/transform/
 ├── provider.py       # TransformOrchestratorProvider
 ├── reader.py         # TextReader
 ├── transformer.py    # TextTransformer
-├── types.py          # TransformResult, SrcText, DstText
+├── types.py          # TransformResult, SrcText, DstText, TransformedDatetime
 └── writer.py         # TextWriter
 ```
 
@@ -46,14 +47,14 @@ src/example/transform/
 
 ```bash
 tests/unit/test_transform/
-├── fakes.py          # テスト用 Fake（FS Protocol のスタブ実装）
-├── test_context.py   # TransformContext のテスト
-├── test_orchestrator.py  # TransformOrchestrator のテスト
-├── test_provider.py  # TransformOrchestratorProvider のテスト
-├── test_reader.py    # TextReader のテスト
-├── test_transformer.py   # TextTransformer のテスト
-├── test_types.py     # TransformResult のテスト
-└── test_writer.py    # TextWriter のテスト
+├── fakes.py             # テスト用 Fake（FS Protocol のスタブ実装）
+├── test_context.py      # TransformContext のテスト
+├── test_orchestrator.py # TransformOrchestrator のテスト
+├── test_provider.py     # TransformOrchestratorProvider のテスト
+├── test_reader.py       # TextReader のテスト
+├── test_transformer.py  # TextTransformer のテスト
+├── test_types.py        # TransformResult, SrcText, DstText, TransformedDatetime のテスト
+└── test_writer.py       # TextWriter のテスト
 ```
 
 ## 処理フロー
@@ -70,15 +71,19 @@ tests/unit/test_transform/
 
 テキストの変換ロジックは `TextTransformer` が担います。
 
+変換前テキスト（例: `example.txt`）:
+
 ```
-入力テキスト（例）:
-  hello
-  world
+hello
+world
+```
 
 変換後テキスト:
-  2024-01-01 12:00:00    ← current_datetime をヘッダーとして追加
-  1: hello               ← 1始まりで行番号を付与
-  2: world
+
+```
+2024-01-01 12:00:00    ← current_datetime をヘッダーとして追加
+1: hello               ← 1始まりで行番号を付与
+2: world
 ```
 
 ## 固有の設計判断
@@ -91,17 +96,17 @@ tests/unit/test_transform/
 
 **トレードオフ**: 例外は基盤パッケージから直接呼び出し元まで伝播するため、エラーの意味づけ（ドメイン例外への変換）が必要な場合は別途対処が必要になる。
 
-### 変換結果に元テキストの行数を使用
+### 変換結果に変換前・変換後の行数を保持
 
-**設計の意図**: `TransformResult.length` には変換後のテキスト行数ではなく、入力テキストの行数を格納する。
+**設計の意図**: `TransformResult` には `src_length`（変換前の行数）と `dst_length`（変換後の行数）の2フィールドを持つ。
 
-**なぜそう設計したか**: 変換後テキストには日時ヘッダー行が追加されるため、変換後の行数は入力行数 + 1 となる。呼び出し元が「いくつのテキスト行を変換したか」を知りたい場合、意味的に正しいのは入力テキストの行数である。
+**なぜそう設計したか**: 変換後テキストには日時ヘッダー行が追加されるため、変換前後の行数は異なる。呼び出し元が「いくつのテキスト行を変換したか」を知りたい場合は `src_length` を、実際に出力された行数を知りたい場合は `dst_length` を参照できる。両方を保持することで、変換の前後の状態を明確に把握できる。
 
 ### SrcText / DstText による入出力テキストの型分離
 
-**設計の意図**: 変換前後のテキストを NewType で `SrcText`（入力）と `DstText`（出力）に区別し、各メソッドのシグネチャに反映する。
+**設計の意図**: 変換前後のテキストを frozen dataclass で `SrcText`（入力）と `DstText`（出力）に区別し、各メソッドのシグネチャに反映する。
 
-**なぜそう設計したか**: 変換前後のテキストはいずれも `str` だが意味的に異なる値である。型で区別することで誤った受け渡しを、静的解析で検出できる。ランタイムでは通常の `str` と同一のため、追加コストはない。
+**なぜそう設計したか**: 変換前後のテキストはいずれも `str` だが意味的に異なる値である。型で区別することで誤った受け渡しを静的解析で検出できる。また、dataclass とすることで `numbered_lines()`・`length()` などのドメインメソッドを各型に持たせることができ、変換ロジックが自然に各クラスのメソッドとして表現される。
 
 ### テストコード: Fake による副作用の分離
 

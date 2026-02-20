@@ -24,14 +24,14 @@ class LogConfigurator:
         log_path = configurator.configure_json()
     """
 
-    def __init__(self, app_name: str, level: str) -> None:
+    def __init__(self, level: str, app_name: str | None = None) -> None:
         """ログ設定を初期化
 
         Args:
-            app_name: アプリケーション名（ログファイル名の一部として使用）
             level: コンソール出力のログレベル（DEBUG, INFO, WARNING, ERROR）
+            app_name: アプリケーション名（ログファイル名の一部として使用）。省略時は "log" を使用
         """
-        self.app_name = app_name
+        self.app_name = app_name or "log"
         self.level = level.upper()
 
     def configure_plain(self) -> Path | None:

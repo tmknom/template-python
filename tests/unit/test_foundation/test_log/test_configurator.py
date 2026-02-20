@@ -28,6 +28,11 @@ class TestLogConfigurator:
             logger.removeHandler(handler)
         logger.setLevel(logging.NOTSET)
 
+    def test_init_デフォルト値_app_nameを省略すると_logになる(self):
+        """app_name を省略すると self.app_name が "log" になる"""
+        configurator = LogConfigurator(level="INFO")
+        assert configurator.app_name == "log"
+
     def test_configure_plain_正常系_Pathを返す(self):
         """configure_plain はログファイルの Path を返す"""
         logger = logging.getLogger()

@@ -20,7 +20,7 @@
 
 #### プロダクションコード
 
-```bash
+```text
 src/example/protocol/
 ├── __init__.py    # 公開 API の定義（TextFileSystemReaderProtocol / TextFileSystemWriterProtocol を __all__ で明示）
 └── fs.py          # TextFileSystemReaderProtocol / TextFileSystemWriterProtocol
@@ -28,7 +28,7 @@ src/example/protocol/
 
 #### テストコード
 
-Protocol定義自体の独立したテストは不要。Adapter側のテスト（`tests/unit/test_foundation/test_fs/`）で継承関係の整合性が担保される。
+Protocol定義自体の独立したテストは不要。Adapter側のテスト（`tests/unit/test_foundation/test_fs/`）で、Adapterが各Protocolを明示継承していることによって継承関係の整合性が担保される。
 
 ## Protocolの配置ルール
 
@@ -46,7 +46,7 @@ Protocolの定義場所は用途によって決まる:
 
 **設計の意図**: `protocol/` を `foundation/` や `feature/` から独立したパッケージとして配置する。
 
-**なぜそう設計したか**: `transform/` が唯一の利用者であっても、fsのProtocol所有者は `transform` ではない。`foundation/` に置くとOnionの方向性（ビジネスロジック → 基盤）が逆転する。`protocol/` を独立させることで「依存される側」として明確に位置づけられる。
+**なぜそう設計したか**: 利用する機能パッケージが1つであっても、fsのProtocol所有者はその機能パッケージではない。`foundation/` に置くとOnionの方向性（ビジネスロジック → 基盤）が逆転する。`protocol/` を独立させることで「依存される側」として明確に位置づけられる。
 
 **トレードオフ**: パッケージ数が増える。ただし、配置の意図が明確になるためコードベースの理解しやすさが向上する。
 

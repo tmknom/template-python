@@ -54,7 +54,7 @@ def transform(
     )
     orchestrator = TransformOrchestratorProvider().provide()
     result = orchestrator.orchestrate(context)
-    print(result)
+    print(result.to_json())
 
 
 @log

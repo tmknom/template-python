@@ -77,16 +77,16 @@ def main_callback(
 ) -> None:
     """各サブコマンドの事前処理"""
     config = AppConfig.build(env=EnvVarConfig(), log_level=log_level)
-    _initialize_logger(ctx.invoked_subcommand or "log", config.log_level)
+    _initialize_logger(config.log_level, ctx.invoked_subcommand)
     _setup_context(ctx, config)
 
 
-def _initialize_logger(app_name: str, log_level: LogLevel) -> None:
+def _initialize_logger(log_level: LogLevel, app_name: str | None) -> None:
     """ロガーの初期化
 
     本アプリケーションではプレーンテキスト形式でログを出力する。
     """
-    log_configurator = LogConfigurator(app_name=app_name, level=log_level)
+    log_configurator = LogConfigurator(level=log_level, app_name=app_name)
     log_path = log_configurator.configure_plain()
     logger.info("Started %s command", app_name)
     logger.info("Log file: %s", log_path)

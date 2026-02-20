@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from example.transform.reader import TextReader
+from example.transform.types import SrcText
 from tests.unit.test_transform.fakes import InMemoryFsReader
 
 
@@ -17,5 +18,5 @@ class TestTextReader:
         result = reader.read(path)
 
         # Assert
-        assert result == "test content"
+        assert result == SrcText("test content")
         assert fs_reader.read_path == path

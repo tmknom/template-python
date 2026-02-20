@@ -41,4 +41,4 @@ class TextWriter:
         Raises:
             FileSystemError: ファイルシステムでエラーが発生した場合
         """
-        self.fs_writer.write(text, path)
+        self.fs_writer.write(str(text), path)

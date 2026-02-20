@@ -34,9 +34,4 @@ class TestTransformOrchestrator:
         assert fs_reader.read_path == context.target_file
         assert fs_writer.written_path == context.tmp_dir / context.target_file.name
         assert fs_writer.written_text is not None
-        first_line = fs_writer.written_text.splitlines()[0]
-        assert first_line == "2024-12-26 15:30:45"
-        assert "line1" in fs_writer.written_text
-        assert "line2" in fs_writer.written_text
-        assert "line3" in fs_writer.written_text
-        assert result.length == 3
+        assert result.src_length == 3

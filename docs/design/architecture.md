@@ -38,15 +38,20 @@
         │  │ ビジネスロジック層│  │ ← 最内殻（中核）
         │  └─────────────────┘  │
         └───────────────────────┘
-            ↑ 両層から参照
+              ↑ 両層から参照
         ┌───────────────────────┐
-        │ foundation            │ ← Shared Kernel（横断的共通部品）
+        │ protocol              │ ← Shared Kernel（OnionのPort定義）
+        └───────────────────────┘
+              ↑ foundation も参照（実装のため）
+        ┌───────────────────────┐
+        │ foundation            │ ← Shared Kernel（横断的共通部品・Adapter実装）
         │（FS・エラー・ログ等）  │
         └───────────────────────┘
 ```
 
 **重要な原則**:
 - 依存は常に外側 → 内側の単方向（CLI → ビジネスロジック）。内側の層は外側の層を知らない。循環依存は禁止。
+- `protocol/` は層ではなく Shared Kernel（Port定義）。OnionアーキテクチャのPort（抽象インターフェース）を定義し、ビジネスロジック層と foundation（Adapter）の両方から参照される。
 - `foundation/` は層ではなく Shared Kernel（横断的共通部品）。CLI層・ビジネスロジック層の両方から参照される。
 
 ### 各層の責務
@@ -55,11 +60,13 @@
 |---------|-----|--------|
 | **CLI層** | コマンドライン処理、実行時コンテキスト、エラーハンドリング | Typer、main関数、ユーザー向けエラーメッセージ |
 | **ビジネスロジック層** | 全体処理制御、ドメイン固有の処理 | Orchestrator、Processor、DataTransformer |
-| **foundation（Shared Kernel）** | 横断的共通部品（外部システムアクセス、エラー処理、ログ、データモデル基盤）。特定の機能に属さず両層から利用される | DatabaseClient、ExternalServiceClient、FileSystem、ErrorHandler、@log |
+| **protocol（Shared Kernel）** | OnionアーキテクチャのPort定義（抽象インターフェース）。ビジネスロジック層とfoundation（Adapter）の境界を提供する | TextFileSystemReaderProtocol、TextFileSystemWriterProtocol |
+| **foundation（Shared Kernel）** | 横断的共通部品のAdapter実装（外部システムアクセス、エラー処理、ログ、データモデル基盤）。特定の機能に属さず両層から利用される | TextFileSystemReader（Adapter）、ErrorHandler、@log |
 
 **foundationに置けるものの判断基準**:
-- 機能に依存しない、横断的で安定した抽象のみ
+- 機能に依存しない、横断的で安定したAdapter実装のみ
 - feature固有の概念が1つでも混ざるなら `<feature>/` に置く
+- Protocolの定義（Port）は `foundation/` ではなく `protocol/` または `<feature>/` に置く
 - 迷ったら `<feature>/` に置く（YAGNI）
 
 ### パッケージ構成とファイルレイアウト
@@ -83,6 +90,7 @@ src/myapp/
 │   ├── context.py           #   実行時コンテキスト（frozen dataclass）
 │   ├── reader.py            #   薄いラッパー（Protocol呼び出しと入出力の型合わせのみ）
 │   ├── writer.py            #   薄いラッパー（Protocol呼び出しと入出力の型合わせのみ）
+│   ├── transformer.py       #   純粋計算モジュール（副作用なし、Protocol不要）※任意
 │   ├── orchestrator.py      #   Orchestrator
 │   └── provider.py          #   Composition Root
 └── cli.py                   # CLI層（エントリーポイント）
@@ -94,10 +102,10 @@ src/myapp/
 |----------|--------|------------|
 | `<protocol>/` | OnionのPort定義（複数機能から共有されるProtocol）（例: `TextFileSystemReaderProtocol`） | 機能固有のProtocol、Adapter実装 |
 | `<foundation>/error/` | ApplicationError基底クラス、ErrorHandler | 機能固有のXxxError、ビジネスロジック固有のバリデーション |
-| `<foundation>/fs/` | Adapter実装のみ | ビジネスロジック固有のProtocol（それは `<feature>/` か `<protocol>/` に置く） |
+| `<foundation>/fs/` | Adapter実装のみ | Protocolの定義（それは `<protocol>/` または `<feature>/` に置く） |
 | `<foundation>/log/` | @logデコレータ、LogConfigurator | アプリケーション固有のログフォーマット |
 | `<foundation>/model/` | CoreModel（Pydantic基底クラス） | ビジネスロジック固有のモデル |
-| `<feature>/` | Context、Result、薄いラッパー、Orchestrator、Provider | 外部ライブラリへの直接依存、ドメイン変換（正規化・集約・検証ルールはOrchestrator/Processorへ） |
+| `<feature>/` | Context、Result、薄いラッパー、純粋計算モジュール（任意）、Orchestrator、Provider | 外部ライブラリへの直接依存、ドメイン変換（正規化・集約・検証ルールはOrchestrator/Processorへ） |
 | `<config>/` | 環境設定クラス（PathConfig等） | ビジネスロジック固有の設定 |
 
 ### パターンの協調構造
@@ -117,22 +125,26 @@ src/myapp/
 │  XxxOrchestrator      ← Orchestrator               │
 │  各種 Reader/Writer   ← Protocol型で注入受ける薄いラッパー│
 └───────────────────────────┬─────────────────────────┘
-                            │ @log が各呼び出しを記録
+                            │
+┌───────────────────────────▼─────────────────────────┐
+│ protocol（Shared Kernel）                           │
+│  各種 Protocol        ← OnionのPort（抽象インターフェース）│
+└───────────────────────────┬─────────────────────────┘
+                            │ Adapter が実装（明示的継承）
 ┌───────────────────────────▼─────────────────────────┐
 │ foundation（Shared Kernel）                         │
-│  各種 Adapter         ← 外部I/Oの具象実装（foundation adapter）│
-│  基盤内部の差し替えポイント ← foundation内部の抽象IF（Onion の Port ではない）│
+│  各種 Adapter         ← Protocolを継承した具象実装   │
 │  （FS, 外部API, サードパーティライブラリ等）          │
 │  ErrorHandler         ← 例外ログ担当               │
-│  @log decorator       ← 正常系ログ担当             │
 └─────────────────────────────────────────────────────┘
 ```
 
 接続の要点:
 - Provider（静的な依存グラフの構築）と Context（実行時の動的パラメータ）は役割が異なる
-- @log は正常系のみを記録し例外は再送出。例外ログは ErrorHandler が担当
 - 環境設定（config/）は CLI 層で読み込み、Context に組み込まれて Orchestrator に届く
 - OnionのPort（ビジネスロジック側の抽象IF）は `<feature>/protocol.py`（機能固有）または `<protocol>/`（複数機能で共有）に定義する
+- `<protocol>/` に定義したProtocolは、ビジネスロジック層（Reader/Writer等）とfoundation（Adapter実装）の両方から参照される
+- foundation の各Adapterパッケージは Protocol を import して継承するが、export はしない（Port/Adapter 境界の維持）
 
 ### 実行時フロー
 
@@ -140,16 +152,11 @@ src/myapp/
 
 ```
 main()
-  ↓ PathConfig.from_base_dir(Path.cwd())
-      [設定層] デプロイ環境依存の値を読み込む
+  ↓ 環境設定を読み込む
+      [設定層] デプロイ環境依存の値を確定する
 
   ↓ XxxOrchestratorProvider().provide()
       [Composition Root] foundation の Adapter を組み立て、feature 側の Port（Protocol）として注入する
-      └ XxxClient(...)           # 外部API / サードパーティライブラリ等
-      └ Reader(XxxFileSystemReader())   # ファイルI/O
-      └ return XxxOrchestrator(reader, client, ...)
-      ※ feature 側の Port（Protocol）は副作用の分離（I/O、DB、外部API等）と
-        サードパーティライブラリの隔離の両方を目的とする
 
   ↓ XxxContext(target_file, tmp_dir=xxx_config.tmp_dir, current_datetime=datetime.now())
       [Context パターン] 実行時パラメータを不変オブジェクトに封じ込める
@@ -157,14 +164,13 @@ main()
 
   ↓ orchestrator.orchestrate(context)
       [Orchestrator] Context のみに依存して処理を実行
-      └ reader.read(...)   # @log: 引数・戻り値を自動記録
-      └ 変換処理（純粋な計算: Protocol も @log も不要）
-      └ writer.write(...)  # @log: 引数・戻り値を自動記録
+      └ reader.read(...)
+      └ 変換処理（純粋な計算: Protocol 不要）
+      └ writer.write(...)
       └ return XxxResult(...)
 
   except Exception as e:
-      ErrorHandler().handle(e)  # [基盤層] 例外ログのみ（sys.exit は呼ばない）
-      sys.exit(1)               # [CLI層] 終了判断はここで行う
+      基盤層に委譲し、CLI 層が終了コードを決定する
 ```
 
 ## Protocol: コードベースの健全性を保つ中核メカニズム
@@ -208,19 +214,16 @@ Protocol はコードベース全体の健全性を守るための積極的な�
 
 ### Protocolの配置ルール
 
-配置ルールの詳細は [protocol パッケージ基本設計](../specs/protocol/design.md) を参照。
+Protocolの配置場所は、そのProtocolが参照される範囲によって決まる:
+
+| 配置場所 | 対象 | 具体例 |
+|---------|------|--------|
+| `<protocol>/` | 複数のfeatureまたはfoundationから共有されるProtocol | `TextFileSystemReaderProtocol`（transform と foundation/fs の両方が参照） |
+| `<feature>/protocol.py` | 特定のfeature固有のProtocol | そのfeatureパッケージ内のみで使用するProtocol |
 
 **Providerが担う役割**:
-Providerは基盤層の具象クラス（Adapter）を組み立てて、Protocol型としてOrchestratorに注入する唯一の場所。
-ビジネスロジック層は具象クラスを直接参照しない。
-
-```
-Provider（<feature>/provider.py）
-    ↓ 基盤パッケージの具象クラスを組み立てる
-TextFileSystemReader()           # Adapter（基盤パッケージ）
-    ↓ Protocol型として注入
-TextReader(fs_reader: TextFileSystemReaderProtocol)
-```
+Providerは `foundation/` の具象クラス（Adapter）を組み立てて、`protocol/` で定義されたProtocol型としてOrchestratorに注入する唯一の場所。
+ビジネスロジック層は具象クラス（foundation の Adapter）を直接参照しない。
 
 ## Composition Root + Orchestrator パターン
 
@@ -244,7 +247,8 @@ Orchestrator
 
 ## Orchestrator-Processorパターン（複数API vs 単一API）
 
-複数のエンティティ（API、データ等）を一括処理する場合、**Orchestrator（イテレーション管理）**と**Processor（単一エンティティ処理）**に責務を分離します:
+**単一フローの処理（1エンティティを1回処理）では Orchestrator のみで十分。**
+複数のエンティティ（API、データ等）を一括処理する場合に限り、**Orchestrator（イテレーション管理）**と**Processor（単一エンティティ処理）**に責務を分離します:
 
 ```
 Orchestrator
@@ -272,14 +276,18 @@ Orchestrator
 Onion Architecture は、Protocol を活用した代表的なアーキテクチャパターンである。外部システム（Database、External Service、ファイルシステム等）への依存を抽象化し、ビジネスロジックを外部変化から保護する。
 
 ```
-ビジネスロジック層
-    ↓ Protocol（Port）経由で依存
-基盤層（Adapter：具象実装）
+ビジネスロジック層（transform/）
+    ↓ Protocol（Port）経由で依存  ← example.protocol を import
+protocol/（Port定義）
+    ↑ 実装（明示的継承）
+foundation/（Adapter：具象実装）
     ↓ 実際の通信
 外部システム（DB、FS、外部API等）
 ```
 
 Pythonではこの Port/Adapter の境界を `Protocol` で実装する。
+`protocol/` パッケージが Port の定義場所であり、ビジネスロジック層は `protocol/` のみに依存し、foundation の具象クラスを直接参照しない。
+Provider（Composition Root）のみが foundation の具象クラス（Adapter）を参照し、Protocol 型として組み立てる。
 
 ## 型設計（ドメインモデルとマッピング）
 
@@ -337,15 +345,7 @@ Pythonではこの Port/Adapter の境界を `Protocol` で実装する。
 | 設定種別 | 読み込みタイミング | 受け渡し先 | 対応パターン |
 |---------|-----------------|-----------|-------------|
 | 環境設定 | main() 起動時 | Context のフィールドとして組み込む | Context パターン |
-| パッケージ固有設定 | Provider 初期化時 | provide() の引数経由で Orchestrator に注入 | Composition Root |
-
-**Provider 設計の原則**:
-- 環境設定は Provider の `__init__` で受け取る（アプリ起動時に確定している）
-- パッケージ固有設定は `provide()` の引数にする（呼び出しごとに異なりうる）
-
-この分類原則に従うことで、Provider のシグネチャが設定の変更理由を反映する。
-デプロイ環境の変更（環境設定）は Provider コンストラクタの変更として現れ、
-精度・性能チューニング（パッケージ固有設定）は provide() の引数変更として現れる。
+| パッケージ固有設定 | Provider 初期化時 | Orchestrator に注入 | Composition Root |
 
 ## 実行時コンテキストのカプセル化（Context パターン）
 
@@ -401,30 +401,11 @@ sys.exit(1)
 |--------------|------|--------|
 | **各コンポーネント** | ApplicationError を継承した例外を raise | `StorageError`, `ValidationError` |
 | **Orchestrator / ビジネスロジック層** | 原則としてキャッチしない（素通り） | `orchestrate()` に try-except を置かない |
-| **ErrorHandler**（基盤層） | 例外の種類に応じてログ出力。sys.exit は呼ばない | `ErrorHandler().handle(e)` |
-| **main()（CLI層）** | 最上位で例外を受け取り終了コードを決定 | `except Exception as e:` + `sys.exit(1)` |
-
-**ApplicationError の構造**:
-
-| パラメータ | 用途 |
-|-----------|------|
-| `message` | ユーザー向けの分かりやすいエラーメッセージ（日本語） |
-| `cause` | 開発者向けの技術的詳細（デバッグ用、例外オブジェクトまたは英語文字列） |
 
 **なぜこのパターンを採用したか**:
 - **キャッチ判断の単純化**: ApplicationError か否かだけで判断できる。「キャッチしない＝素通り」が原則で、上位レイヤーが個別に try-except を書く必要がない
 - **責任境界の明確化**: ErrorHandler はログ出力のみ担当し、sys.exit は呼ばない。終了判断を CLI 層（main()）に残すことで、CLI 以外（REST API 等）からも ErrorHandler を再利用できる
 - **Fail Fast 原則との整合**: 設計原則の「Fail Fast」と直接対応。問題発生箇所で即座に raise し、上位へ伝播させることでエラーを隠蔽しない
-- **一貫性**: 全コンポーネントが ApplicationError 基底クラスを使うため、コードベース全体でエラー情報の構造（message/cause）が統一される
-
-**CLI出力の最小規約**:
-
-| ケース | 出力先 | 内容 |
-|-------|--------|------|
-| ApplicationError | stderr | `ApplicationError.message`（ユーザー向けメッセージ） |
-| 予期しない例外 | stderr | 汎用メッセージのみ（詳細はログに出力し、スタックトレースをユーザーに見せない） |
-
-**終了コードの原則**: 終了コードは `1` のみ（正常終了は `0`）。ApplicationError・予期しない例外を問わず、異常終了は常に `sys.exit(1)`。終了コードを細分化しない（運用の単純化）。
 
 ## @log デコレータによる横断的ロギング
 
@@ -442,19 +423,6 @@ sys.exit(1)
 各メソッドへのログ出力を自分で書く代わりに `@log` を使うことで、
 ビジネスロジックにログコードを混在させずコードをクリーンに保てる。
 
-**役割分担**:
-
-| コンポーネント | 責務 | 具体例 |
-|--------------|------|--------|
-| **@log デコレータ** | 正常系の入出力ログを自動出力。例外はそのまま再送出 | `@log` を付けるだけでメソッドの引数・戻り値を記録 |
-| **ErrorHandler** | 例外発生時のログ出力 | `ErrorHandler().handle(e)` で例外情報を記録 |
-
-**@log の動作**:
-- メソッド開始時: INFO レベルで関数名と引数をログ出力
-- メソッド終了時: INFO レベルで戻り値をログ出力
-- 例外発生時: ログ出力せず、例外をそのまま再送出（ErrorHandler が担当）
-- 大量データの自動要約（リスト・タプル 10 要素以上、文字列 100 文字以上）
-
 **秘匿情報に関するルール**:
 - パスワード・トークン・APIキーなど秘匿情報が混入しうる引数/戻り値を扱うメソッドには `@log` を付けない（ログに秘匿情報が記録されるリスクがある）
 - どうしても `@log` を付ける必要がある場合は、引数・戻り値に渡す前に必ずマスク処理を行う
@@ -462,8 +430,6 @@ sys.exit(1)
 **なぜこのパターンを採用したか**:
 - **横断的関心事の分離**: 各メソッドにロギングコードを埋め込まず、デコレータで一元管理。メソッドの本体がビジネスロジックのみで構成される
 - **ErrorHandler との役割分担**: 例外時はログせず再送出することで、ログ出力の責任を ErrorHandler に集約。「例外ログは ErrorHandler が担当する」というルールを一貫させる
-- **大量データへの配慮**: リスト・文字列の自動要約により、ログが肥大化しない。デバッグに必要な最小限の情報を残す
-- **logger の自動取得**: `logging.getLogger(func.__module__)` で各クラスに `logging.getLogger(__name__)` を書く必要がない
 
 ## ガードレール（禁止事項と例外規定）
 

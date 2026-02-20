@@ -1,11 +1,12 @@
-"""ファイルシステム操作クラス"""
+"""ファイルシステム操作クラス（Adapter実装）"""
 
 from pathlib import Path
 
 from example.foundation.fs.error import FileSystemError
+from example.protocol.fs import TextFileSystemReaderProtocol, TextFileSystemWriterProtocol
 
 
-class TextFileSystemReader:
+class TextFileSystemReader(TextFileSystemReaderProtocol):
     """ファイル読み取り専用クラス
 
     ファイルシステムからのテキストファイル読み取り機能のみを提供します。
@@ -38,7 +39,7 @@ class TextFileSystemReader:
             ) from e
 
 
-class TextFileSystemWriter:
+class TextFileSystemWriter(TextFileSystemWriterProtocol):
     """ファイル書き込み専用クラス
 
     ファイルシステムへのテキストファイル書き込み機能のみを提供します。

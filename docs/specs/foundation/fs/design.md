@@ -5,7 +5,7 @@
 ## アーキテクチャパターン
 
 - **読み書き分離パターン**: `TextFileSystemReader` と `TextFileSystemWriter` を独立したクラスとして定義し、呼び出し元が必要な機能だけに依存できるようにする
-- **Protocol パターン**: Python の `typing.Protocol` を使って構造的部分型（ダックタイピング）ベースのインターフェースを定義し、実装クラスへの明示的な継承なしに型安全な依存性注入を実現する。副作用を持つ処理（ファイル I/O）とそれを利用するビジネスロジックの間に境界を設けることで、副作用の範囲をコントロールする
+- **Adapter パターン**: `protocol/fs.py` に定義された `TextFileSystemReaderProtocol` / `TextFileSystemWriterProtocol` を明示継承することで、型チェッカーが実装の整合性を直接検証できるようにする
 - **エラー変換パターン**: OS 由来の例外を catch し、`FileSystemError` に変換して再送出することで、呼び出し元が処理すべき例外型を統一する
 
 ## コンポーネント構成
@@ -16,8 +16,6 @@
 |---|---|---|
 | 読み取り実装クラス | `TextFileSystemReader` | テキストファイルを UTF-8 で読み込み文字列を返す |
 | 書き込み実装クラス | `TextFileSystemWriter` | テキスト内容を UTF-8 でファイルに書き込む（親ディレクトリ自動作成付き） |
-| 読み取りプロトコル | `TextFileSystemReaderProtocol` | 読み取り操作の型安全なインターフェース定義 |
-| 書き込みプロトコル | `TextFileSystemWriterProtocol` | 書き込み操作の型安全なインターフェース定義 |
 | ファイルシステム例外 | `FileSystemError` | ファイル操作エラーを表す業務例外クラス |
 
 ### ファイルレイアウト
@@ -26,9 +24,8 @@
 
 ```bash
 src/example/foundation/fs/
-├── __init__.py    # 公開 API の定義（5 シンボルを __all__ で明示）
+├── __init__.py    # 公開 API の定義（3 シンボルを __all__ で明示）
 ├── error.py       # FileSystemError（ファイルシステム固有の業務例外）
-├── protocol.py    # TextFileSystemReaderProtocol / TextFileSystemWriterProtocol
 └── text.py        # TextFileSystemReader / TextFileSystemWriter（実装クラス）
 ```
 
@@ -64,19 +61,14 @@ tests/unit/test_foundation/test_fs/
 
 **トレードオフ**: 両方の操作が必要な呼び出し元では 2 つのオブジェクトを管理する必要がある。ただし、読み書きを同時に必要とするケースは読み書きの責務分離の観点から再設計を検討する余地がある。
 
-### Protocol による抽象化
+### Adapter による Protocol 実装
 
-**設計の意図**: 実装クラス（`TextFileSystemReader`, `TextFileSystemWriter`）とは別に、Protocol インターフェース（`TextFileSystemReaderProtocol`, `TextFileSystemWriterProtocol`）を定義し、副作用を持つ処理（実装クラス）と副作用を持たない処理（呼び出し元のビジネスロジック）の間に明確な境界を設ける。
+**設計の意図**: `TextFileSystemReader` と `TextFileSystemWriter` は `protocol/fs.py` の
+`TextFileSystemReaderProtocol` / `TextFileSystemWriterProtocol` を明示的に継承する。
 
-**なぜそう設計したか**: ファイルシステムへのアクセスはアプリケーション外への副作用を持つ処理である。副作用を Protocol 境界に閉じ込め、呼び出し元は Protocol にのみ依存させることで、2 つの効果が得られる。
+**なぜそう設計したか**: Python の構造的部分型ではシグネチャが一致していれば Protocol に準拠できるが、明示継承にはさらに 2 つの利点がある。第一に、IDE や型チェッカーが継承関係を直接検証でき、シグネチャのずれを即座に検出できる。第二に、「意図的にこの Protocol を実装した」という設計意図がコードに現れ、将来の読者が実装の目的を理解しやすくなる。
 
-第一に、開発時の認知負荷の低減。呼び出し元コンポーネントは「Protocol を満たすオブジェクトを受け取る」だけであり、その実装が実際にファイルシステムにアクセスするかどうかを意識する必要がない。
-
-第二に、テスタビリティの大幅な向上。呼び出し元のテストでは、Protocol に準拠したインメモリ実装（読み取り結果を固定文字列で返すクラス、書き込み内容をフィールドに保持するクラスなど）を作成し、テスト対象に注入するだけでよい。インメモリ実装は通常の Python クラスとして記述でき、モックフレームワーク固有の知識（動的パッチングや呼び出し検証の専用 API 等）が不要である。実装の変更に追従して Fake クラスを更新する際も、通常のリファクタリングとして扱える。
-
-Python の `typing.Protocol` は構造的部分型をサポートするため、実装クラスが明示的に Protocol を継承しなくても型チェックが機能する。インメモリ実装（Fake）を作る際も同様で、明示的な継承なしに Protocol の要件を満たすクラスを書くだけでよい。
-
-**トレードオフ**: 実装クラスと Protocol の両方を定義・維持する必要があり、インターフェース変更時は両方を更新しなければならない。また、Protocol に準拠したインメモリ実装（Fake）もシグネチャ変更に追従して更新が必要になる。
+**トレードオフ**: foundation/ が protocol/ に依存する方向の依存が生まれる。ただし、protocol/ は標準ライブラリのみに依存する純粋な型定義であるため、この依存は軽量である。
 
 ### OS 例外の FileSystemError への変換
 
@@ -106,7 +98,7 @@ Python の `typing.Protocol` は構造的部分型をサポートするため、
 
 ### 公開 API の制限
 
-公開 API は `__init__.py` の `__all__` で定義された 5 シンボルのみ（`FileSystemError`, `TextFileSystemReader`, `TextFileSystemReaderProtocol`, `TextFileSystemWriter`, `TextFileSystemWriterProtocol`）。内部モジュールからの直接 import は行わず、`example.foundation.fs` パッケージから import すること。
+公開 API は `__init__.py` の `__all__` で定義された 3 シンボルのみ（`FileSystemError`, `TextFileSystemReader`, `TextFileSystemWriter`）。Protocol の定義は `example.protocol.fs` から import すること。内部モジュールからの直接 import は行わず、`example.foundation.fs` パッケージから import すること。
 
 ### FileSystemError の例外チェーン
 
@@ -138,8 +130,8 @@ Python の `typing.Protocol` は構造的部分型をサポートするため、
 
 | 変更内容 | 主な変更対象 | 備考 |
 |---|---|---|
-| 読み取りロジックを変更 | `text.py`（`TextFileSystemReader`） | Protocol のシグネチャを変更する場合は `protocol.py` も更新する |
-| 書き込みロジックを変更 | `text.py`（`TextFileSystemWriter`） | Protocol のシグネチャを変更する場合は `protocol.py` も更新する |
+| 読み取りロジックを変更 | `text.py`（`TextFileSystemReader`） | Protocol のシグネチャを変更する場合は `protocol/fs.py` も更新する |
+| 書き込みロジックを変更 | `text.py`（`TextFileSystemWriter`） | Protocol のシグネチャを変更する場合は `protocol/fs.py` も更新する |
 | エラーメッセージを変更 | `text.py`（各 except ブロック） | `FileSystemError` のコンストラクタ引数（`message`, `cause`）を確認する |
 | 新しいバックエンド実装を追加 | 新規ファイル（Protocol に準拠したクラスを定義） | `__init__.py` の `__all__` への追加は公開 API として必要な場合のみ |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |
@@ -153,3 +145,4 @@ foundation/fs パッケージはアプリケーション全体のファイルシ
 - [foundation/fs パッケージ要件定義](./requirements.md): foundation/fs パッケージの機能要件や前提条件
 - [foundation/error パッケージ基本設計](../error/design.md): foundation/error パッケージのアーキテクチャ設計やコンポーネント構成
 - [Python アーキテクチャ設計](../../../design/architecture.md): プロジェクト共通の設計思想
+- [protocol パッケージ基本設計](../../protocol/design.md): OnionのPort定義

@@ -3,6 +3,7 @@
 CLIの共通動作を検証
 """
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -34,8 +35,9 @@ class TestIntegrationCLI:
 
         # Assert
         assert result.returncode == 0
-        assert "src_length=" in result.stdout
-        assert "dst_length=" in result.stdout
+        data = json.loads(result.stdout)
+        assert "src_length" in data
+        assert "dst_length" in data
 
         # 出力ファイルが作成されていることを確認
         output_file = tmp_output_dir / "input.txt"
@@ -73,7 +75,8 @@ class TestIntegrationCLI:
 
         # Assert
         assert result.returncode == 0
-        assert "src_length=" in result.stdout
+        data = json.loads(result.stdout)
+        assert "src_length" in data
         assert (cli_tmp_dir / "input.txt").exists()
         assert not (env_tmp_dir / "input.txt").exists()
 

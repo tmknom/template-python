@@ -1,4 +1,22 @@
-from example.transform.types import DstText, SrcText
+import json
+
+from example.transform.types import DstText, SrcText, TransformResult
+
+
+class TestTransformResult:
+    """TransformResultクラスのテスト"""
+
+    def test_to_json_正常系_JSON文字列を返すこと(self):
+        # Arrange
+        result = TransformResult(src_length=3, dst_length=4)
+
+        # Act
+        json_str = result.to_json()
+
+        # Assert
+        data = json.loads(json_str)
+        assert data["src_length"] == 3
+        assert data["dst_length"] == 4
 
 
 class TestSrcText:

@@ -69,10 +69,11 @@ class DstText:
 
 
 class TransformResult(CoreModel):
-    """Transform実行結果
-
-    Transform処理全体の結果を保持します。
-    """
+    """変換前後のテキスト行数を保持する不変な結果オブジェクト"""
 
     src_length: int = Field(..., description="変換前のテキスト行数")
     dst_length: int = Field(..., description="変換後のテキスト行数")
+
+    def to_json(self) -> str:
+        """JSON文字列として返す"""
+        return self.model_dump_json()

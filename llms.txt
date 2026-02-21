@@ -60,6 +60,7 @@ Identify and read task-related sections below:
 ## Development Workflow
 
 - [Makefile](Makefile): Development commands (sync, fmt, lint, typecheck, test-unit, coverage) - Use when understanding available development commands or modifying the build/test pipeline
+- [Development workflow](docs/design/workflow.md): Tech stack, development commands, key principles (TDD, 100% coverage, type hints, test isolation), and step-by-step development flow (pre-implementation → TDD cycle → post-implementation) - Use when starting implementation tasks, understanding development rules, or reviewing the standard workflow
 
 ## Introduction
 

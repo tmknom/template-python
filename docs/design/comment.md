@@ -428,8 +428,8 @@ class TextFileSystemReaderProtocol(Protocol):
 公開APIは `<package>` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - 要件定義: docs/spec/<package>/requirements.md
-    - 設計書: docs/spec/<package>/design.md
+    - docs/spec/<package>/requirements.md
+    - docs/spec/<package>/design.md
 """
 ```
 
@@ -454,8 +454,8 @@ Docs:
 公開APIは `example.foundation.error` から import すること(`__all__` のみ互換性対象)。
 
 Docs:
-    - 要件定義: docs/spec/error/requirements.md
-    - 設計書: docs/spec/error/design.md
+    - docs/spec/error/requirements.md
+    - docs/spec/error/design.md
 """
 
 from example.foundation.error.error import ApplicationError

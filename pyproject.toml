@@ -1,7 +1,7 @@
 [project]
 name = "example"
 version = "0.1.0"
-description = "サンプルアプリケーション"
+description = "CLIアプリケーション"
 requires-python = ">=3.13.0,<3.14"
 dependencies = [
     "colorlog>=6.10.1",
@@ -14,16 +14,6 @@ dependencies = [
     "uvicorn>=0.40.0",
 ]
 
-[project.scripts]
-example = "example.cli:main"
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/example"]
-
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
@@ -35,6 +25,16 @@ dev = [
     "pyright>=1.1.408",
 ]
 
+[project.scripts]
+example = "example.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/example"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [tool.pytest.ini_options]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
@@ -42,13 +42,12 @@ pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.coverage.run]
-patch = ["subprocess"]  # pytest-cov 7.0+ のサブプロセスカバレッジ（parallel=trueは自動設定）
-source = ["src"]        # 計測対象を明示
+source = ["src"]  # 計測対象を明示
 
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-exclude = [".git", ".ruff_cache", ".venv", ".vscode", "tool"]
+exclude = [".git", ".venv", ".vscode", ".claude", "tmp"]
 
 [tool.ruff.lint]
 # 有効化するルール群
@@ -65,38 +64,34 @@ select = [
   "D",    # pydocstyle。docstring の存在・体裁をチェック（Google 方式を後述で指定）。
 ]
 
-# 生成AIや日本語ドキュメント作成を阻害しがちなルールを抑制
+# 日本語でのアプリケーション開発を阻害しがちなルールを抑制
 ignore = [
+  # 別ツールの責務は除外
   "E501",   # 行長オーバーはフォーマッタ/レビューで対処（URL・日本語の自然な文も許容）。
-  "B007",   # 未使用ループ変数（クロージャ束縛等の指摘）。生成コードで一時的に出やすい。
-  "B008",   # デフォルト引数内での関数呼び出し。生成コードが出しやすいので当面許容。
-  "B019",   # lru_cache on methods。DictionaryLoaderでは意図的に使用（シングルトン管理は上位層で実施）。
-  "B905",   # zip(strict=True) の強制はまず外す（本番コードのみ厳格化は per-file で対応可）。
-  "RUF001", # 文字列内の曖昧 Unicode（カタカナ「ノ」等）。日本語文字列許容のため無視。
+
+  # 日本語をコメントで扱えるように調整
+  "RUF001", # 文字列内の曖昧 Unicode（ASCII に見えるCyrillic/Greek文字等）。日本語文字列許容のため無視。
   "RUF002", # docstring 内の曖昧 Unicode（全角記号等）。日本語 docstring 許容のため無視。
   "RUF003", # コメント内の曖昧 Unicode。日本語コメント許容のため無視。
-  "SIM105", # try-except-pass → contextlib.suppress 提案は好み分岐のため無視。
-  "SIM108", # if 内で return/raise がある場合の else 省略提案は可読性次第なので無視。
-  "SIM116", # 連続 if を dict マップ置換する提案は過度な抽象化を招くため無視。
-  "UP042",  # str + Enum → StrEnum 提案。既存コードは動作しているため当面維持（別途移行検討可）。
 
-  # ↓ docstring（Google方式）関連。docstring は原則必須としつつ、日本語句読点に配慮。
+  # 品質への寄与度が低い、コーディングスタイルの指摘は無効化
+  "SIM105", # try-except-pass → contextlib.suppress 提案は好み分岐のため無視。
+  "SIM108", # if-else ブロックを三項演算子に置き換える提案は可読性次第なので無視。
+  "SIM116", # 連続 if を dict マップ置換する提案は過度な抽象化を招くため無視。
+
+  # ルール競合（Google 方式）
   "D203",   # クラス docstring 前の空行を要求（D211 と競合）。Google 方式では D211 が優先のため無視。
   "D213",   # 要約行を2行目から始めるべきという指摘（D212 と競合）。Google 方式では D212 を採用するため無視。
+
+  # docstring は原則必須としつつ、日本語句読点に配慮
   "D400",   # 1行目をピリオドで終わらせる指摘。日本語の「。」を許容するため無視。
   "D415",   # 1行目の句読点（.?!）を要求。日本語句読点「。」を許容するため無視。
-]
-
-# 自動修正の対象から外す（誤消し事故防止）
-unfixable = [
-  "F401",  # 未使用 import。__init__.py の再エクスポート等、意図的に必要な場合がある。
-  "F841",  # 未使用変数。デバッグ用フックや将来拡張のプレースホルダ等で一時的に置く。
 ]
 
 # パス/用途別に緩める（本番は厳しめ、周辺は緩めの運用を実現）
 [tool.ruff.lint.per-file-ignores]
 "**/__init__.py" = ["F401"]  # public API 再エクスポートの未使用 import を許容。
-"tests/**"            = ["B905", "D100", "D101", "D102", "D107"]  # テストでは zip(strict=True) を強制せず、docstring も不要。
+"tests/**"            = ["D100", "D101", "D102", "D107"]  # テストでは docstring は不要。
 "tests/**/__init__.py" = ["D104"]  # テストの __init__.py は空ファイルのため、パッケージ docstring を免除。
 
 # docstring のスタイルを Google 方式に統一
@@ -105,7 +100,7 @@ convention = "google" # pydocstyle で Google スタイル docstring をチェ�
 
 [tool.pyright]
 include = ["src", "tests"]
-exclude = [".venv", "build", "dist", "**/__pycache__", "tool"]
+exclude = [".git", ".venv", ".vscode", ".claude", "tmp", "build", "dist"]  # ruff はデフォルトで build/dist を除外するが pyright は明示が必要
 pythonVersion = "3.13"
 typeCheckingMode = "basic"
 
@@ -119,7 +114,7 @@ reportMissingImports = "warning"            # 依存導入前の未解決import�
 reportMissingModuleSource = "warning"       # 実体がない型スタブのみのモジュールも警告止まりにして開発を止めない。
 reportPrivateUsage = "warning"              # _privateな要素の外部使用を抑制。
 
-# 型ヒント必須の徹底（MODEL-003-1準拠）
+# 型ヒント必須の徹底
 reportUnknownVariableType = "error"         # 型ヒント必須: 推論できない変数型をエラーにする。
 reportUnknownParameterType = "error"        # 型ヒント必須: 推論できないパラメータ型をエラーにする。
 reportMissingTypeArgument = "error"         # 型ヒント必須: Generics型の型引数必須（例: list → list[str]）。

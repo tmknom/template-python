@@ -13,6 +13,10 @@ uv run コマンド経由での実行を想定している。
 依存するコンポーネントを適切に組み立て、Orchestrator を実行することが責務である。
 なおエラー発生時は main 関数内の ErrorHandler が例外を補足し、エラーハンドリングを実行する。
 
+Docs:
+    - docs/specs/cli/requirements.md
+    - docs/specs/cli/design.md
+
 Usage:
     uv run example transform xxxx.md
     uv run example --help

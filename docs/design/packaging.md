@@ -3,7 +3,6 @@
 ## 目的
 
 このドキュメントは、Pythonパッケージの構成方針を定義する。
-各方針を支えるツール設定については「推奨ツール設定」セクションを参照。
 
 ## テストディレクトリの `__init__.py`
 
@@ -69,41 +68,6 @@ docstring方針は [comment.md](comment.md) を参照。
 `__init__.py` で内部モジュールを re-export し、パッケージの公開APIを定義する。
 `__all__` に列挙したもののみ互換性対象とする。
 
-## 推奨ツール設定
+## ツール設定
 
-本ドキュメントの方針を支える `pyproject.toml` 設定。
-
-### pytest
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `pythonpath` | `["src", "."]` | `src/` 配下と `tests/` 配下を絶対 import で参照できるようにする |
-| `testpaths` | `["tests"]` | テスト検索パス（Python import パスではない） |
-
-`pythonpath` は pytest 7.0+ のビルトイン機能であり、追加プラグインは不要。
-プロジェクト標準は `pyproject.toml` の `[tool.pytest.ini_options]` セクションの設定を正とする。
-
-`"."` （プロジェクトルート）を `pythonpath` に追加することで、`tests.unit.test_transform.fakes` のような絶対 import が解決できる。
-`__init__.py` によりテストディレクトリがパッケージとして認識されるため、各 `fakes.py` を絶対パスで参照できる。
-
-### ruff（`__init__.py` 関連）
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `**/__init__.py` で `F401` 無視 | 未使用 import 許容 | 公開 API の re-export を許容 |
-| `F401` を unfixable | 自動修正対象外 | re-export の誤削除を防止 |
-
-### pyright
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `executionEnvironments` の `src` | `extraPaths = ["src"]` | プロダクションコードの import 解決 |
-| `executionEnvironments` の `tests` | `extraPaths = ["src", "."]` | テストから src 配下にアクセス |
-
-`__init__.py` によるパッケージ化と `"."` の追加により、テストパッケージの絶対 import は pyright が解決する。
-`"."` はプロジェクトルートを import パスに追加する設定であり、pytest の `pythonpath` 設定と対応する。
-ルート直下にプロダクション用モジュールは配置しないこと（プロダクションコードは `src/` 配下に限定する）。
-
-### 設定ファイル
-
-上記設定の実体は `pyproject.toml` の各ツールセクションにある。
+本ドキュメントの方針に対応する `pyproject.toml` の設定内容（`pythonpath`、`executionEnvironments`、`F401` の per-file-ignores など）は別ドキュメントに集約している。

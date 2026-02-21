@@ -6,7 +6,7 @@
 
 各ツールの設定項目は公式ドキュメントを読まなければ意図が分からない。特に Ruff の `ignore/unfixable/per-file-ignores` や Pyright の診断レベル設定は「なぜその値なのか」がコードから読み取れない。本ドキュメントはその「なぜ」を補足する。
 
-対象セクションは `[project]` を除く、ビルドシステム・テスト・Linter・型チェックの各設定とする。既存の [comment.md](comment.md) と [packaging.md](packaging.md) の「推奨ツール設定」セクションで一部の設定を解説しているため、本ドキュメントはそれらを補完・参照する位置づけとする。
+対象セクションは `[project]` を除く、ビルドシステム・テスト・Linter・型チェックの各設定とする。
 
 ## CLIエントリーポイント（project.scripts）
 
@@ -58,7 +58,14 @@
 
 `asyncio_default_fixture_loop_scope = "function"` は、各テスト関数が独立したイベントループを使用することを保証する。テスト間の状態汚染を防ぎ、テストの独立性を高める。
 
-`pythonpath` と `testpaths` の方針については [packaging.md](packaging.md) の「推奨ツール設定 / pytest」セクションを参照。
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `pythonpath` | `["src", "."]` | `src/` 配下と `tests/` 配下を絶対 import で参照できるようにする |
+| `testpaths` | `["tests"]` | テスト検索パス（Python import パスではない） |
+
+`pythonpath` は pytest 7.0+ のビルトイン機能であり、追加プラグインは不要。プロジェクト標準は `pyproject.toml` の `[tool.pytest.ini_options]` セクションの設定を正とする。
+
+`"."` （プロジェクトルート）を `pythonpath` に追加することで、`tests.unit.test_transform.fakes` のような絶対 import が解決できる。`__init__.py` によりテストディレクトリがパッケージとして認識されるため、各 `fakes.py` を絶対パスで参照できる。
 
 ### coverage
 
@@ -98,6 +105,14 @@
 
 日本語文字列・コメント・docstring を許容するための無効化。英語前提のルールは日本語コードベースで大量に誤検知する。
 
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `D400` 無視 | 1行目末尾のピリオド不要 | 日本語の「。」を句点として許容 |
+| `D415` 無視 | 1行目末尾の句読点不要 | 日本語の「。」を句点として許容 |
+| `RUF001` 無視 | 文字列内の曖昧 Unicode | 日本語文字列を許容 |
+| `RUF002` 無視 | docstring 内の曖昧 Unicode | 日本語 docstring を許容 |
+| `RUF003` 無視 | コメント内の曖昧 Unicode | 日本語コメントを許容 |
+
 **LLM 生成コード配慮** — B007, B008, B905, B019
 
 生成コードで頻出し、開発を阻害するため全体では無効化する。厳格化が必要な場合は `per-file-ignores` で対応する。
@@ -109,7 +124,12 @@
 
 **ルール競合（Google 方式）** — D203, D213
 
-`D203/D211` と `D212/D213` はそれぞれ競合するペアである。両方を有効にすると ruff がエラーを返す構造になっており、Google 方式で採用した側（D211, D212）を活かし、競合する側（D203, D213）を無効化する。詳細は [comment.md](comment.md) の「推奨ツール設定 / docstringのスタイル（Google方式）」セクションを参照。
+`D203/D211` と `D212/D213` はそれぞれ競合するペアである。両方を有効にすると ruff がエラーを返す構造になっており、Google 方式で採用した側（D211, D212）を活かし、競合する側（D203, D213）を無効化する。
+
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `D203` 無視 | D211 と競合 | クラス docstring 前に空行を要求しない（Google 方式では D211 優先） |
+| `D213` 無視 | D212 と競合 | 要約行は 1 行目に書く（Google 方式では D212 採用） |
 
 **可読性・移行コスト** — SIM105, SIM108, SIM116, UP042
 
@@ -124,7 +144,7 @@
 
 自動修正を有効にすると、ruff が意図しないコードを削除してしまう危険がある。以下の 2 ルールを対象外とする。
 
-- **F401（未使用 import）**: `__init__.py` での re-export は構文上「未使用」に見えるが、公開 API として意図的に必要。自動削除されると公開 API が壊れる。re-export の方針については [packaging.md](packaging.md) の「re-export」セクションを参照。
+- **F401（未使用 import）**: `__init__.py` での re-export は構文上「未使用」に見えるが、公開 API として意図的に必要。自動削除されると公開 API が壊れる。
 - **F841（未使用変数）**: デバッグ用フックや将来拡張のプレースホルダとして一時的に置く場合がある。削除すると開発の流れを妨げる。
 
 ### パス別の緩和（per-file-ignores）
@@ -133,15 +153,41 @@
 
 | パターン | 緩和するルール | 理由 |
 |---------|--------------|------|
-| `**/__init__.py` | F401 | re-export の未使用 import を許容（詳細は [packaging.md](packaging.md) 参照） |
-| `tests/**` | B905, D100, D101, D102, D107 | テストでは `zip(strict=True)` を強制せず、docstring も不要（詳細は [comment.md](comment.md) 参照） |
-| `tests/**/__init__.py` | D104 | テストの `__init__.py` は空ファイルのためパッケージ docstring を免除（詳細は [packaging.md](packaging.md) 参照） |
+| `**/__init__.py` | F401 | re-export の未使用 import を許容 |
+| `tests/**` | B905, D100, D101, D102, D107 | テストでは `zip(strict=True)` を強制せず、docstring も不要 |
+| `tests/**/__init__.py` | D104 | テストの `__init__.py` は空ファイルのためパッケージ docstring を免除 |
+
+**`__init__.py` の F401 緩和について**
+
+`__init__.py` での re-export は公開 API の定義手段であり、構文上「未使用」に見えても意図的なものである。
+
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `**/__init__.py` で `F401` 無視 | 未使用 import 許容 | 公開 API の re-export を許容 |
+| `F401` を unfixable | 自動修正対象外 | re-export の誤削除を防止 |
+
+**`tests/**` の docstring 緩和について**
+
+テストコードでは docstring を必須としない。テストクラスは 1 行 docstring を推奨するが lint では強制しない。テストメソッドはテスト名に情報を集約する方針のため、docstring は不要である。
+
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `tests/**` で `D100` 無視 | モジュール docstring 免除 | テストモジュールに docstring は書かない |
+| `tests/**` で `D101` 無視 | クラス docstring 免除 | テストクラスは 1 行 docstring を推奨するが、lint では強制しない |
+| `tests/**` で `D102` 無視 | メソッド docstring 免除 | テストメソッドに docstring は書かない |
+| `tests/**` で `D107` 無視 | `__init__` docstring 免除 | テストの `__init__` メソッドに docstring は不要 |
+
+`tests/**/__init__.py` の D104 免除はテストの `__init__.py` が空ファイルで配置される方針によるもので、パッケージ docstring の記述義務を免除する。
 
 ### docstringスタイル（pydocstyle）
 
 `convention = "google"` を指定すると、pydocstyle の Google スタイル準拠ルールセットが自動的に有効・無効になる。具体的には D212（要約行は 1 行目）が有効になり、その代わりに競合する D213 は自動的に無効扱いとなる。
 
-`convention` を指定することで、Google スタイルに合わないルールを個別に無効化する手間が省ける。詳細は [comment.md](comment.md) の「既存ルールとの関係 / Google形式（MODEL-003）」セクションを参照。
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `convention` | `"google"` | Google 形式で docstring を記述 |
+
+`convention` を指定することで、Google スタイルに合わないルールを個別に無効化する手間が省ける。
 
 ## 型チェック設定（tool.pyright）
 
@@ -157,10 +203,15 @@
 
 `executionEnvironments` は「どのディレクトリのコードがどの import パスを持つか」を pyright に伝える設定である。
 
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `executionEnvironments` の `src` | `extraPaths = ["src"]` | プロダクションコードの import 解決 |
+| `executionEnvironments` の `tests` | `extraPaths = ["src", "."]` | テストから src 配下にアクセス |
+
 - `root = "src"` の環境: `extraPaths = ["src"]` を設定し、`src/` 配下のモジュールを互いに import できるようにする
 - `root = "tests"` の環境: `extraPaths = ["src", "."]` を設定し、テストから本番コードにアクセスできるようにする
 
-テストパッケージの絶対 import（`from tests.unit.test_transform.fakes import ...`）は `__init__.py` によるパッケージ化と `"."` の追加で pyright が解決する。`"."` はプロジェクトルートを意味する。詳細な import 解決の方針は [packaging.md](packaging.md) の「推奨ツール設定 / pyright」セクションを参照。
+テストパッケージの絶対 import（`from tests.unit.test_transform.fakes import ...`）は `__init__.py` によるパッケージ化と `"."` の追加で pyright が解決する。`"."` はプロジェクトルートを import パスに追加する設定であり、pytest の `pythonpath` 設定と対応する。ルート直下にプロダクション用モジュールは配置しないこと（プロダクションコードは `src/` 配下に限定する）。
 
 ### 診断レベルの設計思想
 
@@ -182,7 +233,7 @@ pyright の診断レベルは `"error"`, `"warning"`, `"none"` の 3 段階で�
 - `reportUnusedCoroutine`: `await` 忘れはコルーチンが実行されない実行不具合になる
 - `reportMatchNotExhaustive`: `match` 文で網羅漏れがあると想定外のケースで処理が抜ける
 - `reportOverlappingOverload`: オーバーロード定義の矛盾は型推論の誤動作を招く
-- `reportUnknownVariableType`, `reportUnknownParameterType`, `reportMissingTypeArgument`: 型ヒント必須の方針（MODEL-003-1）を機械的に強制する
+- `reportUnknownVariableType`, `reportUnknownParameterType`, `reportMissingTypeArgument`: 型ヒント必須の方針を機械的に強制する
 
 **警告に留めるもの（開発をブロックしたくない）**:
 

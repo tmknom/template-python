@@ -675,44 +675,6 @@ def validate(self, data: dict) -> bool:
 - **テストクラスdocstring**: 1行で最小限に
 - **コメント更新責任**: 古いコメントは削除を推奨、仕様への参照を優先
 
-## 推奨ツール設定
+## ツール設定
 
-本ドキュメントの方針を機械的に強制するための `pyproject.toml` 設定。
-
-### docstring の存在チェック
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `select` に `"D"` | pydocstyle 有効 | プロダクションコードでは docstring 必須 |
-| `tests/**` で `D100` 無視 | モジュール docstring 免除 | テストモジュールに docstring は書かない |
-| `tests/**` で `D101` 無視 | クラス docstring 免除 | テストクラスは 1 行 docstring を推奨するが、lint では強制しない |
-| `tests/**` で `D102` 無視 | メソッド docstring 免除 | テストメソッドに docstring は書かない |
-| `tests/**` で `D107` 無視 | `__init__` docstring 免除 | テストの `__init__` メソッドに docstring は不要 |
-
-### docstring のスタイル（Google 方式）
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `convention` | `"google"` | Google 形式で docstring を記述（MODEL-003 準拠） |
-| `D203` 無視 | D211 と競合 | クラス docstring 前に空行を要求しない（Google 方式では D211 優先） |
-| `D213` 無視 | D212 と競合 | 要約行は 1 行目に書く（Google 方式では D212 採用） |
-
-### 日本語対応
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `D400` 無視 | 1行目末尾のピリオド不要 | 日本語の「。」を句点として許容 |
-| `D415` 無視 | 1行目末尾の句読点不要 | 日本語の「。」を句点として許容 |
-| `RUF001` 無視 | 文字列内の曖昧 Unicode | 日本語文字列を許容 |
-| `RUF002` 無視 | docstring 内の曖昧 Unicode | 日本語 docstring を許容 |
-| `RUF003` 無視 | コメント内の曖昧 Unicode | 日本語コメントを許容 |
-
-### `__init__.py` 関連
-
-| 設定 | 値 | 対応する方針 |
-|------|-----|-------------|
-| `**/__init__.py` で `F401` 無視 | 未使用 import 許容 | 公開 API の re-export を許容 |
-
-### 設定ファイル
-
-上記設定の実体は `pyproject.toml` の `[tool.ruff.lint]` セクションにある。
+本ドキュメントの方針に対応する `pyproject.toml` の設定内容（ruff の `select`、`ignore`、`per-file-ignores`、`convention` など）は別ドキュメントに集約している。

@@ -1,11 +1,11 @@
 # template-python
 
-GitHubを使ったPythonアプリケーション開発向けのテンプレートリポジトリです。
+本リポジトリでは、Pythonアプリケーション開発向けのテンプレートを提供します。
 AI駆動開発ワークフローを前提に設計されています。
 
 ## 概要
 
-このテンプレートが提供するもの：
+本リポジトリでは次のテンプレートを提供しています。
 
 - **リファレンス実装** (`src/example/`) — Onion Architecture と Composition Root + Orchestrator パターンを適用した動作するサンプル実装
 - **設計ドキュメント** (`docs/design/`) — アーキテクチャ設計・コーディング規約
@@ -16,22 +16,27 @@ AI駆動開発ワークフローを前提に設計されています。
 
 ## アーキテクチャ
 
-**Onion Architecture** と **Composition Root + Orchestrator パターン**を採用しています：
+**Onion Architecture** と **Composition Root + Orchestrator パターン**を採用しています。
 
 ```
         ┌───────────────────────┐
         │ CLI層                 │ ← 最外殻
         │  ┌─────────────────┐  │
-        │  │ ビジネスロジック層│  │ ← 中核
+        │  │ ビジネスロジック層│  │ ← 最内殻（中核）
         │  └─────────────────┘  │
         └───────────────────────┘
-            ↑ 両層から参照
+              ↑ 両層から参照
         ┌───────────────────────┐
-        │ 基盤（foundation）    │ ← Shared Kernel（error, fs, log, model）
+        │ protocol              │ ← Shared Kernel（OnionのPort定義）
+        └───────────────────────┘
+              ↑ foundation も参照（実装のため）
+        ┌───────────────────────┐
+        │ foundation            │ ← Shared Kernel（横断的共通部品・Adapter実装）
+        │（FS・エラー・ログ等）  │
         └───────────────────────┘
 ```
 
-依存は常に外側から内側へ一方向です。`foundation/` パッケージは全層から参照される Shared Kernel として機能します。
+依存は常に外側から内側へ一方向です。`protocol/` はPort（抽象インターフェース）を定義する Shared Kernel です。`foundation/` はAdapter実装と横断的共通部品を提供する Shared Kernel として、全層から参照されます。
 
 詳細は[アーキテクチャ設計](docs/design/architecture.md)を参照してください。
 
@@ -39,7 +44,7 @@ AI駆動開発ワークフローを前提に設計されています。
 
 ### Step 1: コンセプトを理解する
 
-以下の順序でオンボーディングドキュメントを読んでください：
+以下の順序でオンボーディングドキュメントを読んでください。
 
 | ドキュメント | 内容 |
 |-------------|------|
@@ -53,12 +58,7 @@ AI駆動開発ワークフローを前提に設計されています。
 `src/example/transform/` がアーキテクチャパターン全体の規範的な例です。
 新しい機能パッケージを追加する際は、ここから始めてください。
 
-| コンポーネント | 場所 | 役割 |
-|--------------|------|------|
-| CLIエントリポイント | `src/example/cli.py` | Config・Context・Provider を組み立てて Orchestrator に委譲 |
-| ビジネスロジック | `src/example/transform/` | Orchestrator + Composition Root パターン |
-| Shared Kernel | `src/example/foundation/` | 横断的共通部品（error, fs, log, model） |
-| 設定 | `src/example/config/` | 環境変数ロードとパス構築 |
+詳細なコンポーネント一覧は[リポジトリ構造](docs/intro/structure.md)を参照してください。
 
 ### Step 3: 開発ワークフローを実行する
 
@@ -73,7 +73,7 @@ make coverage     # カバレッジ計測
 
 ## ドキュメント
 
-ドキュメントは3層構造で整理されています：
+ドキュメントは3層構造で整理されています。
 
 | 層 | ディレクトリ | 目的 |
 |----|------------|------|

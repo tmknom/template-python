@@ -31,8 +31,6 @@ Onion Architecture と Composition Root + Orchestrator パターンを適用し�
 |---------|------|
 | `architecture.md` | レイヤー構成、各種設計パターン、ガードレール |
 | `specs.md` | 仕様ドキュメントの目的・設計思想・記述ガイドライン |
-| `comment.md` | Docstring・インラインコメントの設計 |
-| `packaging.md` | Pythonパッケージ構成・テストディレクトリ設計 |
 | `pyproject.toml` | ビルドシステム・リンター・型チェッカーの設定根拠 |
 
 ### 仕様ドキュメント（`docs/specs/`）

@@ -53,8 +53,6 @@ Identify and read task-related sections below:
 
 ## Coding Standards
 
-- [Comment guidelines](docs/design/comment.md): Docstring and inline comment design - Use when modifying or reviewing `src/` or `tests/`, understanding module/class/method docstring separation, or applying Google-style docstring conventions
-- [Packaging guidelines](docs/design/packaging.md): Python packaging and test directory design - Use when modifying or reviewing `__init__.py`, adding packages, understanding test helper placement, or reviewing pytest/pyright configuration
 - [pyproject.toml design](docs/design/pyproject.md): Configuration rationale for build system, linter, and type checker - Use when modifying or reviewing `pyproject.toml` settings, understanding ruff/pyright rule choices, or reviewing tool configuration decisions
 - [Specification design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when modifying or reviewing `docs/specs/` documents, understanding why `docs/specs/` exists, or reviewing synchronization requirements
 

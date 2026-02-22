@@ -80,8 +80,6 @@ tests/
 docs/
 ├── design/                       # 設計ドキュメント
 │   ├── architecture.md           # レイヤードアーキテクチャ・設計パターン
-│   ├── comment.md                # コメント・Docstring ガイドライン
-│   ├── packaging.md              # パッケージング・テストディレクトリ設計
 │   ├── pyproject.md              # pyproject.toml 設定の根拠
 │   ├── specs.md                  # specs/ ドキュメントの設計方針
 │   └── workflow.md               # 技術スタック・開発コマンド・開発規律・開発フロー

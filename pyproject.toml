@@ -38,7 +38,8 @@ pythonpath = ["src", "."]
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["src"]  # 計測対象を明示
+source = ["src"]  # 計測対象を src/ 配下に限定する
+patch = ["subprocess"]  # subprocess 経由の子プロセスも計測対象に含める
 
 [tool.ruff]
 line-length = 100

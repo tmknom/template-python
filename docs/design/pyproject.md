@@ -71,6 +71,26 @@
 
 `source = ["src"]` はカバレッジ計測の対象を `src/` 配下に限定する設定で、テストコードやツール類がレポートに混入することを防ぐ。
 
+`patch = ["subprocess"]` はサブプロセス内のコードをカバレッジ計測対象に含めるための設定である。
+
+インテグレーションテスト（`tests/integration/`）では、CLI アプリを `subprocess.run()` で子プロセスとして起動して end-to-end の動作を検証する。この子プロセス内で実行されるアプリコード（`src/example/` 配下）は、通常の状態では pytest の計測範囲に含まれない。`patch = ["subprocess"]` を設定することで、この問題を解決する。
+
+仕組みは以下のとおりである。
+
+1. **環境変数の伝播**: coverage.py が `COVERAGE_PROCESS_CONFIG` 環境変数にカバレッジ設定をシリアライズして保存し、`subprocess.run()` で起動する子プロセスに自動的に引き継がれる。
+2. **`.pth` ファイルによる自動ロード**: pytest-cov はインストール時に仮想環境の `site-packages/` に `.pth` ファイルを生成する。子プロセスの Python 起動時にこのファイルが自動読み込まれ、`COVERAGE_PROCESS_CONFIG` が存在すれば `coverage.process_startup()` を呼び出す。
+3. **子プロセスでの計測開始**: `coverage.process_startup()` により、子プロセス内でも `src/example/` 配下のコードが計測対象になる。
+4. **並列モードの自動有効化**: `patch = ["subprocess"]` を設定すると `parallel = true` が自動的に有効になる。各プロセスが独立した `.coverage.<pid>` ファイルに書き込み、pytest-cov がテスト終了後に全ファイルを統合してレポートを生成する。
+
+`patch = ["subprocess"]` がない場合、`subprocess.run()` で起動した子プロセス内のアプリコードはカバレッジ計測対象外となる。インテグレーションテストが実行されても、その中で走ったコードパスがカバレッジレポートに反映されない。
+
+`source = ["src"]` と `patch = ["subprocess"]` はセットで機能する。前者が「何を計測するか」を定義し、後者が「子プロセスを含めて計測する仕組みを有効にする」役割を担う。
+
+| 設定 | 値 | 対応する方針 |
+|------|-----|-------------|
+| `source` | `["src"]` | `src/` 配下のみを計測対象とし、テストコードやツール類の混入を防ぐ |
+| `patch` | `["subprocess"]` | `subprocess` 経由で起動した子プロセス内のコードも計測対象に含める |
+
 ## Linter設定（tool.ruff）
 
 ### 基本設定

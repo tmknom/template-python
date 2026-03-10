@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(/skills/**/*.md)",
+      "Write(/skills/**/*.md)",
+      "Edit(/skills/**/*.md)",
+      "Read(/skills/**/*.sh)",
+      "Write(/skills/**/*.sh)",
+      "Edit(/skills/**/*.sh)",
+      "Bash(.claude/skills/*.sh*)",
+      "Bash(bash .claude/skills/*.sh*)",
+      "Bash(./.claude/skills/*.sh*)",
+      "Bash(bash ./.claude/skills/*.sh*)",
+      "Bash(/Users/owner/code/TODO/*.sh*)",
+      "Bash(bash /Users/owner/code/TODO/*.sh*)",
+      "Bash(git commit:*)",
+      "Bash(git -C:*)",
+      "Bash(uv run:*)",
+      "Bash(uv sync:*)",
+      "Bash(python3:*)"
+    ],
+    "deny": ["Read(*/tmp.md)"]
+  },
+  "model": "opusplan"
+}

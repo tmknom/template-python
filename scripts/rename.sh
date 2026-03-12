@@ -29,7 +29,6 @@ set -euo pipefail
 #   8. src/example/ ディレクトリを src/<new_name>/ にリネーム
 #
 # 置換除外:
-#   - example.txt（docs/specs/transform/design.md 内の変換例ファイル名）
 #   - .envrc.example 等の .example 拡張子ファイル
 #   - .venv/、.git/、tmp/ 配下のファイル
 #   - テストデータ内の値（/tmp/example のようなパス文字列）
@@ -135,14 +134,8 @@ sed -i "" "s|\`${OLD_NAME}\.\([a-z_][a-z0-9_.]*\)\`|\`${NEW_NAME}.\1\`|g" "${REP
 # =============================================================================
 echo "[7/8] Updating docs/ Markdown files..."
 
-# `example.txt` の置換を防ぐプレースホルダー
-PLACEHOLDER="__RENAME_PROTECTED_EXAMPLE_TXT__"
-
 while IFS= read -r -d '' file; do
-    # Step A: `example.txt` をプレースホルダーで保護
-    sed -i "" "s|\`${OLD_NAME}\.txt\`|${PLACEHOLDER}|g" "${file}"
-
-    # Step B: src/example/ 形式のパスリテラル
+    # Step A: src/example/ 形式のパスリテラル
     sed -i "" "s|src/${OLD_NAME}/|src/${NEW_NAME}/|g" "${file}"
 
     # Step C: バッククォート内の `example.XXX` 形式（モジュールパス）
@@ -158,9 +151,8 @@ while IFS= read -r -d '' file; do
     # Step D: バッククォートなしのモジュールパス（テーブル・コメント内の主要サブモジュール）
     sed -i "" "s|${OLD_NAME}\.\(cli\|config\|transform\|foundation\|protocol\)|${NEW_NAME}.\1|g" "${file}"
 
-    # Step E: 環境変数プレフィックス（大文字 EXAMPLE_ および小文字 example_ の両方）
+    # Step E: 環境変数プレフィックス（大文字 EXAMPLE_）
     sed -i "" "s|${OLD_NAME_UPPER}_|${NEW_NAME_UPPER}_|g" "${file}"
-    sed -i "" "s|${OLD_NAME}_|${NEW_NAME}_|g" "${file}"
 
     # Step F: コマンド例（スペース区切り・バッククォート終端の両方）
     sed -i "" "s|uv run ${OLD_NAME} |uv run ${NEW_NAME} |g" "${file}"
@@ -176,8 +168,6 @@ while IFS= read -r -d '' file; do
     # Step I: コードブロック内のディレクトリ表記（例: `└── example/`）
     sed -i "" "s|└── ${OLD_NAME}/|└── ${NEW_NAME}/|g" "${file}"
 
-    # Step J: プレースホルダーを元に戻す
-    sed -i "" "s|${PLACEHOLDER}|\`${OLD_NAME}.txt\`|g" "${file}"
 done < <(find "${REPO_ROOT}/docs" -name "*.md" -print0)
 
 # =============================================================================

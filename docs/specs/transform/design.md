@@ -71,7 +71,7 @@ tests/unit/test_transform/
 
 テキストの変換ロジックは `TextTransformer` が担います。
 
-変換前テキスト（例: `example.txt`）:
+変換前テキスト（例: `sample.txt`）:
 
 ```
 hello

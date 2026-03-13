@@ -5,6 +5,7 @@
 ```
 .
 ├── docs/          # ドキュメント（設計・仕様・イントロダクション）
+├── scripts/       # 初期設定スクリプト
 ├── src/           # Python ソースコード
 ├── tests/         # Python テストコード
 ├── CLAUDE.md      # Claude Code プロジェクトメモリ
@@ -101,12 +102,3 @@ docs/
         ├── design.md             # 基本設計書
         └── requirements.md       # 要件定義書
 ```
-
-## 主要な設定ファイル
-
-| ファイル | 役割 |
-| --- | --- |
-| `CLAUDE.md` | Claude Code のプロジェクトメモリ。Plan Mode の制約や AI エージェント向けの行動規範を定義する |
-| `llms.txt` | ドキュメントインデックス。AI エージェントがタスクに関連するドキュメントを素早く発見するためのナビゲーションガイド |
-| `Makefile` | 開発タスクの定義。`sync`・`fmt`・`lint`・`typecheck`・`test-unit`・`coverage` 等のコマンドを提供する |
-| `pyproject.toml` | Python プロジェクト設定。ビルドシステム・依存関係・ruff（リンター/フォーマッター）・pyright（型チェッカー）の設定を一元管理する |

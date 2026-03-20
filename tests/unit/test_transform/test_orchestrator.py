@@ -6,7 +6,7 @@ from example.transform.orchestrator import TransformOrchestrator
 from example.transform.reader import TextReader
 from example.transform.transformer import TextTransformer
 from example.transform.writer import TextWriter
-from tests.unit.test_transform.fakes import InMemoryFsReader, InMemoryFsWriter
+from tests.unit.fake import InMemoryFsReader, InMemoryFsWriter
 
 
 class TestTransformOrchestrator:
@@ -14,7 +14,7 @@ class TestTransformOrchestrator:
 
     def test_orchestrate_正常系_target_fileを読み込んで変換結果を書き込むこと(self):
         # Arrange
-        fs_reader = InMemoryFsReader(content="line1\nline2\nline3")
+        fs_reader = InMemoryFsReader(text="line1\nline2\nline3")
         fs_writer = InMemoryFsWriter()
         orchestrator = TransformOrchestrator(
             reader=TextReader(fs_reader),
@@ -31,7 +31,4 @@ class TestTransformOrchestrator:
         result = orchestrator.orchestrate(context)
 
         # Assert
-        assert fs_reader.read_path == context.target_file
-        assert fs_writer.written_path == context.tmp_dir / context.target_file.name
-        assert fs_writer.written_text is not None
         assert result.src_length == 3

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from example.transform.reader import TextReader
 from example.transform.types import SrcText
-from tests.unit.test_transform.fakes import InMemoryFsReader
+from tests.unit.fake import InMemoryFsReader
 
 
 class TestTextReader:
@@ -11,12 +11,12 @@ class TestTextReader:
     def test_read_正常系_指定パスのコンテンツを返すこと(self):
         # Arrange
         path = Path("some/file.txt")
-        fs_reader = InMemoryFsReader(content="test content")
+        fs_reader = InMemoryFsReader(text="test text")
         reader = TextReader(fs_reader)
 
         # Act
         result = reader.read(path)
 
         # Assert
-        assert result == SrcText("test content")
-        assert fs_reader.read_path == path
+        assert result == SrcText("test text")
+        assert fs_reader.file_path == path

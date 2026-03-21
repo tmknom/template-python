@@ -8,9 +8,10 @@ Docs:
 """
 
 from example.config.app import AppConfig
-from example.config.env_var import EnvVarConfig
+from example.config.env_var import EnvVarConfig, LogLevel
 
 __all__ = [
     "AppConfig",
     "EnvVarConfig",
+    "LogLevel",
 ]

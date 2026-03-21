@@ -30,8 +30,7 @@ from typing import Annotated
 
 import typer
 
-from example.config import AppConfig, EnvVarConfig
-from example.config.env_var import LogLevel
+from example.config import AppConfig, EnvVarConfig, LogLevel
 from example.foundation.error import ErrorHandler
 from example.foundation.log import LogConfigurator, log
 from example.transform import TransformContext, TransformOrchestratorProvider

@@ -29,7 +29,7 @@
 
 ### レイヤー構成
 
-本プロジェクトは、明確な単方向依存を持つ2つのレイヤーと、横断的共通部品（Shared Kernel）で構成される:
+本プロジェクトは、明確な単方向依存を持つ2つのレイヤーと、Port定義（protocol）、横断的共通部品（foundation）で構成されます。
 
 ```
         ┌───────────────────────┐
@@ -38,33 +38,44 @@
         │  │ ビジネスロジック層│  │ ← 最内殻（中核）
         │  └─────────────────┘  │
         └───────────────────────┘
-              ↑ 両層から参照
+              │ 両層がimport
+              ▼
         ┌───────────────────────┐
-        │ protocol              │ ← Shared Kernel（OnionのPort定義）
+        │ protocol              │ ← Port定義（副作用の抽象インターフェース）
         └───────────────────────┘
-              ↑ foundation も参照（実装のため）
+              ▲ Adapter実装のためにimport
         ┌───────────────────────┐
-        │ foundation            │ ← Shared Kernel（横断的共通部品・Adapter実装）
-        │（FS・エラー・ログ等）  │
+        │ foundation            │ ← 横断的共通部品（Adapter実装・ログ・エラー・モデル基盤）
         └───────────────────────┘
 ```
 
-**重要な原則**:
-- 依存は常に外側 → 内側の単方向（CLI → ビジネスロジック）。内側の層は外側の層を知らない。循環依存は禁止。
-- `protocol/` は層ではなく Shared Kernel（Port定義）。OnionアーキテクチャのPort（抽象インターフェース）を定義し、ビジネスロジック層と foundation（Adapter）の両方から参照される。
-- `foundation/` は層ではなく Shared Kernel（横断的共通部品）。CLI層・ビジネスロジック層の両方から参照される。
+レイヤー間の依存は以下の原則に従います。
+
+- 依存は常に外側から内側への単方向（CLI層 → ビジネスロジック層）である。内側の層は外側の層を知らない。循環依存は禁止
+- `protocol/` は層ではなくPort定義である。副作用を持つ処理の抽象インターフェース（Onion ArchitectureのPort）を定義し、ビジネスロジック層とfoundation（Adapter）の両方から参照される
+- `foundation/` は層ではなく横断的共通部品である。3つの役割を持ち、役割によってビジネスロジック層からの依存方法が異なる（「foundationの3つの役割」を参照）
 
 ### 各層の責務
 
 | レイヤー / 区分 | 責務 | 具体例 |
 |---------|-----|--------|
 | **CLI層** | コマンドライン処理、実行時コンテキスト、エラーハンドリング | Typer、main関数、ユーザー向けエラーメッセージ |
-| **ビジネスロジック層** | 全体処理制御、ドメイン固有の処理 | Orchestrator、Processor、DataTransformer |
-| **protocol（Shared Kernel）** | OnionアーキテクチャのPort定義（抽象インターフェース）。ビジネスロジック層とfoundation（Adapter）の境界を提供する | TextFileSystemReaderProtocol、TextFileSystemWriterProtocol |
-| **foundation（Shared Kernel）** | 横断的共通部品のAdapter実装（外部システムアクセス、エラー処理、ログ、データモデル基盤）。特定の機能に属さず両層から利用される | TextFileSystemReader（Adapter）、ErrorHandler、@log |
+| **ビジネスロジック層** | 全体処理制御、ドメイン固有の処理 | Orchestrator、DataTransformer |
+| **protocol（Port定義）** | 副作用を持つ処理の抽象インターフェース（Onion ArchitectureのPort）を定義する。ビジネスロジック層は具象実装（Adapter）ではなくこのProtocolに依存することで、テスト時にモックへ差し替えられる | TextFileSystemReaderProtocol、TextFileSystemWriterProtocol |
+| **foundation（横断的共通部品）** | 特定の機能に属さず両層から利用される横断的共通部品。3つの役割を持ち、役割によってビジネスロジック層からの依存方法が異なる（下表参照） | TextFileSystemReader（Adapter）、CoreModel、@log、ApplicationError |
+
+#### foundationの3つの役割
+
+| 役割 | 概要 | 具体例 | ビジネスロジック層からの依存 |
+|------|------|--------|--------------------------|
+| 技術的関心事の実装（Adapter） | 副作用を伴う処理のProtocol実装 | `foundation/fs/text.py` | Protocol経由の間接依存のみ。Provider以外は具象クラスを参照しない |
+| サードパーティライブラリの隔離 | 外部ライブラリのラッパー | `foundation/model/base.py`（CoreModel / Pydantic） | 直接依存してよい。ライブラリ変更時の影響をfoundationに局所化する |
+| 横断的関心事の実装 | 機能横断的なユーティリティ | `foundation/log/decorator.py`（@log）、`foundation/error/error.py`（ApplicationError） | 直接依存してよい。すべての層から利用される共通部品 |
+
+最も重要な役割は「技術的関心事の実装（Adapter）」です。副作用をProtocol経由で分離することにより、ビジネスロジック層のテスタビリティが確保されます。これがOnion Architecture の核心であり、次のセクションで詳述しています。
 
 **foundationに置けるものの判断基準**:
-- 機能に依存しない、横断的で安定したAdapter実装のみ
+- 機能に依存しない、横断的で安定した共通部品のみ（Adapter実装、ライブラリ隔離、横断的ユーティリティ）
 - feature固有の概念が1つでも混ざるなら `<feature>/` に置く
 - Protocolの定義（Port）は `foundation/` ではなく `protocol/` または `<feature>/` に置く
 - 迷ったら `<feature>/` に置く（YAGNI）
@@ -105,73 +116,26 @@ src/myapp/
 | `<foundation>/fs/` | Adapter実装のみ | Protocolの定義（それは `<protocol>/` または `<feature>/` に置く） |
 | `<foundation>/log/` | @logデコレータ、LogConfigurator | アプリケーション固有のログフォーマット |
 | `<foundation>/model/` | CoreModel（Pydantic基底クラス） | ビジネスロジック固有のモデル |
-| `<feature>/` | Context、Result、薄いラッパー、純粋計算モジュール（任意）、Orchestrator、Provider | 外部ライブラリへの直接依存、ドメイン変換（正規化・集約・検証ルールはOrchestrator/Processorへ） |
+| `<feature>/` | Context、Result、薄いラッパー、純粋計算モジュール（任意）、Orchestrator、Provider | 外部ライブラリへの直接依存、ドメイン変換（正規化・集約・検証ルールはOrchestratorへ） |
 | `<config>/` | 環境設定クラス（PathConfig等） | ビジネスロジック固有の設定 |
 
-### パターンの協調構造
+## Onion Architecture（オニオンアーキテクチャ）
 
-各パターンは独立したものではなく、役割分担によって協調する。
-
-```
-┌─────────────────────────────────────────────────────┐
-│ CLI層                                               │
-│  XxxConfig            ← 環境設定（config/）         │
-│  XxxContext           ← Context パターン            │
-│  XxxOrchestratorProvider ← Composition Root       │
-└───────────────────────────┬─────────────────────────┘
-                            │ orchestrate(context)
-┌───────────────────────────▼─────────────────────────┐
-│ ビジネスロジック層                                  │
-│  XxxOrchestrator      ← Orchestrator               │
-│  各種 Reader/Writer   ← Protocol型で注入受ける薄いラッパー│
-└───────────────────────────┬─────────────────────────┘
-                            │
-┌───────────────────────────▼─────────────────────────┐
-│ protocol（Shared Kernel）                           │
-│  各種 Protocol        ← OnionのPort（抽象インターフェース）│
-└───────────────────────────┬─────────────────────────┘
-                            │ Adapter が実装（明示的継承）
-┌───────────────────────────▼─────────────────────────┐
-│ foundation（Shared Kernel）                         │
-│  各種 Adapter         ← Protocolを継承した具象実装   │
-│  （FS, 外部API, サードパーティライブラリ等）          │
-│  ErrorHandler         ← 例外ログ担当               │
-└─────────────────────────────────────────────────────┘
-```
-
-接続の要点:
-- Provider（静的な依存グラフの構築）と Context（実行時の動的パラメータ）は役割が異なる
-- 環境設定（config/）は CLI 層で読み込み、Context に組み込まれて Orchestrator に届く
-- OnionのPort（ビジネスロジック側の抽象IF）は `<feature>/protocol.py`（機能固有）または `<protocol>/`（複数機能で共有）に定義する
-- `<protocol>/` に定義したProtocolは、ビジネスロジック層（Reader/Writer等）とfoundation（Adapter実装）の両方から参照される
-- foundation の各Adapterパッケージは Protocol を import して継承するが、export はしない（Port/Adapter 境界の維持）
-
-### 実行時フロー
-
-起動から完了までの制御フローと、各パターンの担当箇所:
+Onion Architecture は、Protocol を活用した代表的なアーキテクチャパターンです。「レイヤー構成」で示した protocol（Port定義）と foundation（Adapter実装）の関係は、このパターンに基づいています。外部システム（Database、External Service、ファイルシステム等）への依存を抽象化し、ビジネスロジックを外部変化から保護します。
 
 ```
-main()
-  ↓ 環境設定を読み込む
-      [設定層] デプロイ環境依存の値を確定する
-
-  ↓ XxxOrchestratorProvider().provide()
-      [Composition Root] foundation の Adapter を組み立て、feature 側の Port（Protocol）として注入する
-
-  ↓ XxxContext(target_file, tmp_dir=xxx_config.tmp_dir, current_datetime=datetime.now())
-      [Context パターン] 実行時パラメータを不変オブジェクトに封じ込める
-      ※ XxxConfig の値はここで Context に取り込まれ、Orchestrator には直接渡らない
-
-  ↓ orchestrator.orchestrate(context)
-      [Orchestrator] Context のみに依存して処理を実行
-      └ reader.read(...)
-      └ 変換処理（純粋な計算: Protocol 不要）
-      └ writer.write(...)
-      └ return XxxResult(...)
-
-  except Exception as e:
-      基盤層に委譲し、CLI 層が終了コードを決定する
+ビジネスロジック層（transform/）
+    ↓ Protocol（Port）経由で依存  ← example.protocol を import
+protocol/（Port定義）
+    ↑ 実装（明示的継承）
+foundation/（Adapter：具象実装）
+    ↓ 実際の通信
+外部システム（DB、FS、外部API等）
 ```
+
+Pythonではこの Port/Adapter の境界を `Protocol` で実装する。
+`protocol/` パッケージが Port の定義場所であり、ビジネスロジック層は `protocol/` のみに依存し、foundation の具象クラスを直接参照しない。
+Provider（Composition Root）のみが foundation の具象クラス（Adapter）を参照し、Protocol 型として組み立てる。
 
 ## Protocol: コードベースの健全性を保つ中核メカニズム
 
@@ -245,49 +209,71 @@ Orchestrator
 - **Composition Rootパターン**: エントリーポイント近くで依存関係を一箇所にまとめることで、依存性注入を明示的に管理（書籍「DIの原理・原則とパターン」で推奨されるパターン）
 - **Orchestrator抽象化**: ビジネスロジックをエントリーポイント（CLI、REST API等）から独立させることで、インターフェース変更時もビジネスロジック層は不変
 
-## Orchestrator-Processorパターン（複数API vs 単一API）
 
-**単一フローの処理（1エンティティを1回処理）では Orchestrator のみで十分。**
-複数のエンティティ（API、データ等）を一括処理する場合に限り、**Orchestrator（イテレーション管理）**と**Processor（単一エンティティ処理）**に責務を分離します:
+## パターンの協調構造
 
-```
-Orchestrator
-    ↓ エンティティ一覧の取得
-    ↓ for entity in entities:
-    └→ Processor.process(entity)
-           ↓ 単一エンティティの処理
-           ↓ データ読み込み・変換・生成
-           └→ 結果保存
-```
-
-**役割分担**:
-
-| コンポーネント | 責務 | 具体例 |
-|-------------|------|--------|
-| **Orchestrator** | ・エンティティ一覧の取得<br>・`for entity in entities:` イテレーション<br>・結果の集約<br>・CLIからの独立 | `orchestrate(targets: tuple[str, ...])` |
-| **Processor** | ・単一エンティティの処理ロジック<br>・データ読み込み・変換・生成<br>・ファイル保存 | `process(api: Api)` |
-
-**なぜこのパターンを採用したか**:
-- **テスタビリティ**: Processorを個別にテスト可能。モックAPIを使い、単一API処理とイテレーション制御を独立してテストできる
-- **保守性**: 単一エンティティ処理の変更がProcessorに局所化され、影響範囲が限定される。バグ修正や機能追加がしやすい
-
-## Onion Architecture（オニオンアーキテクチャ）
-
-Onion Architecture は、Protocol を活用した代表的なアーキテクチャパターンである。外部システム（Database、External Service、ファイルシステム等）への依存を抽象化し、ビジネスロジックを外部変化から保護する。
+各パターンは独立したものではなく、役割分担によって協調する。
 
 ```
-ビジネスロジック層（transform/）
-    ↓ Protocol（Port）経由で依存  ← example.protocol を import
-protocol/（Port定義）
-    ↑ 実装（明示的継承）
-foundation/（Adapter：具象実装）
-    ↓ 実際の通信
-外部システム（DB、FS、外部API等）
+┌─────────────────────────────────────────────────────┐
+│ CLI層                                               │
+│  XxxConfig            ← 環境設定（config/）         │
+│  XxxContext           ← Context パターン            │
+│  XxxOrchestratorProvider ← Composition Root       │
+└───────────────────────────┬─────────────────────────┘
+                            │ orchestrate(context)
+┌───────────────────────────▼─────────────────────────┐
+│ ビジネスロジック層                                  │
+│  XxxOrchestrator      ← Orchestrator               │
+│  各種 Reader/Writer   ← Protocol型で注入受ける薄いラッパー│
+└───────────────────────────┬─────────────────────────┘
+                            │
+┌───────────────────────────▼─────────────────────────┐
+│ protocol（Port定義）                                │
+│  各種 Protocol        ← OnionのPort（抽象インターフェース）│
+└───────────────────────────┬─────────────────────────┘
+                            │ Adapter が実装（明示的継承）
+┌───────────────────────────▼─────────────────────────┐
+│ foundation（横断的共通部品）                         │
+│  各種 Adapter         ← Protocolを継承した具象実装   │
+│  （FS, 外部API, サードパーティライブラリ等）          │
+│  ErrorHandler         ← 例外ログ担当               │
+└─────────────────────────────────────────────────────┘
 ```
 
-Pythonではこの Port/Adapter の境界を `Protocol` で実装する。
-`protocol/` パッケージが Port の定義場所であり、ビジネスロジック層は `protocol/` のみに依存し、foundation の具象クラスを直接参照しない。
-Provider（Composition Root）のみが foundation の具象クラス（Adapter）を参照し、Protocol 型として組み立てる。
+接続の要点:
+- Provider（静的な依存グラフの構築）と Context（実行時の動的パラメータ）は役割が異なる
+- 環境設定（config/）は CLI 層で読み込み、Context に組み込まれて Orchestrator に届く
+- OnionのPort（ビジネスロジック側の抽象IF）は `<feature>/protocol.py`（機能固有）または `<protocol>/`（複数機能で共有）に定義する
+- `<protocol>/` に定義したProtocolは、ビジネスロジック層（Reader/Writer等）とfoundation（Adapter実装）の両方から参照される
+- foundation の各Adapterパッケージは Protocol を import して継承するが、export はしない（Port/Adapter 境界の維持）
+
+## 実行時フロー
+
+起動から完了までの制御フローと、各パターンの担当箇所:
+
+```
+main()
+  ↓ 環境設定を読み込む
+      [設定層] デプロイ環境依存の値を確定する
+
+  ↓ XxxOrchestratorProvider().provide()
+      [Composition Root] foundation の Adapter を組み立て、feature 側の Port（Protocol）として注入する
+
+  ↓ XxxContext(target_file, tmp_dir=xxx_config.tmp_dir, current_datetime=datetime.now())
+      [Context パターン] 実行時パラメータを不変オブジェクトに封じ込める
+      ※ XxxConfig の値はここで Context に取り込まれ、Orchestrator には直接渡らない
+
+  ↓ orchestrator.orchestrate(context)
+      [Orchestrator] Context のみに依存して処理を実行
+      └ reader.read(...)
+      └ 変換処理（純粋な計算: Protocol 不要）
+      └ writer.write(...)
+      └ return XxxResult(...)
+
+  except Exception as e:
+      基盤層に委譲し、CLI 層が終了コードを決定する
+```
 
 ## 型設計（ドメインモデルとマッピング）
 
@@ -384,7 +370,7 @@ Result を返す
 例外は「発生箇所で即 raise、最上位で一括処理」を原則とし、`ApplicationError` 基底クラスと `ErrorHandler` で一貫したエラー処理を実現する。
 
 ```
-各コンポーネント（Processor等）
+各コンポーネント
     ↓ ApplicationError を raise（素通り）
 Orchestrator / ビジネスロジック層
     ↓ 原則キャッチしない（素通り）
@@ -442,18 +428,11 @@ sys.exit(1)
 | Context以外の外部状態を参照しない（`datetime.now()` 等を直接呼ばない） | Orchestratorが純粋関数に近づき、固定値を渡すだけでテストできる |
 | Config を直接受け取らない（Contextのフィールドに含めてもらう） | 設定の取得方法をOrchestratorが知る必要はない |
 
-### Processor
-
-| ルール | 理由 |
-|-------|------|
-| イテレーションを持たない（単一エンティティのみ処理） | イテレーション制御はOrchestratorが担う。責務を明確に分離する |
-| Orchestratorを参照しない | 循環依存の防止 |
-
 ### Reader / Writer
 
 | ルール | 理由 |
 |-------|------|
-| 変換規則（正規化・集約・検証）を持たない | 変換ロジックはOrchestrator/Processorが担う。Reader/WriterはProtocol呼び出しと入出力の型合わせのみを行う薄いラッパーである |
+| 変換規則（正規化・集約・検証）を持たない | 変換ロジックはOrchestratorが担う。Reader/WriterはProtocol呼び出しと入出力の型合わせのみを行う薄いラッパーである |
 | ビジネスロジックを含めない | ビジネスルールが分散するとテスト・変更時の影響範囲が広がる |
 
 ### Adapter

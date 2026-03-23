@@ -22,7 +22,7 @@ Typer を使用し、`src/example/cli.py` がエントリーポイントとな�
 ### ビジネスロジック層
 
 ドメイン固有の処理とその制御フローを担うレイヤー。CLI層の内側に位置し、外部システム（DB・FS・外部API）への直接依存を持たない。
-Orchestrator、Processor、Reader、Writer などのコンポーネントで構成される。
+Orchestrator、Transformer、Reader、Writer などのコンポーネントで構成される。
 外部システムへの依存は Protocol 経由で抽象化し、テスト時はモックに差し替えられる。
 
 ### 基盤（Shared Kernel）

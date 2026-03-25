@@ -6,7 +6,7 @@
 from pathlib import Path
 
 from example.foundation.log import log
-from example.protocol.fs import TextFileSystemWriterProtocol
+from example.protocol import TextFileSystemWriterProtocol
 from example.transform.types import DstText
 
 

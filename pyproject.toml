@@ -41,6 +41,19 @@ testpaths = ["tests"]
 source = ["src"]  # 計測対象を src/ 配下に限定する
 patch = ["subprocess"]  # subprocess 経由の子プロセスも計測対象に含める
 
+# allow-dirs 未指定だと全ファイルでサードパーティインポートが禁止されるため、
+# このプロジェクトでサードパーティを直接使っている箇所を明示的に許可する。
+#
+# - src/example/foundation/ : pydantic / pydantic-settings / colorlog を使う基盤レイヤー
+# - tests/                  : pytest / pydantic をテストコードで直接インポート
+[tool.paladin.rule.no-third-party-import]
+allow-dirs = ["src/example/foundation/", "tests/"]
+
+# allow-dirs 未指定だと全パッケージ間のクロスインポートが禁止されるため、
+# 複数パッケージから参照される共通パッケージを明示的に許可する。
+[tool.paladin.rule.no-cross-package-import]
+allow-dirs = ["src/example/foundation/", "src/example/protocol/"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py313"

@@ -76,7 +76,7 @@ tests/unit/test_foundation/test_model/
 
 ### 公開 API の制限
 
-公開 API は `CoreModel` のみ（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`example.foundation.model` パッケージから import すること。
+公開 API は `CoreModel` と `Field`（`__init__.py` の `__all__` で明示）。内部モジュールからの直接 import は行わず、`example.foundation.model` パッケージから import すること。
 
 ### frozen インスタンスの変更
 
@@ -90,6 +90,7 @@ tests/unit/test_foundation/test_model/
 |---|---|
 | Pydantic `BaseModel` | `CoreModel` の基底クラス。バリデーション・シリアライゼーション・不変性の実装を利用する |
 | Pydantic `ConfigDict` | `CoreModel` の共通設定を定義するための設定オブジェクト |
+| Pydantic `Field` | フィールドにメタデータ（説明・制約等）を付与するファクトリ関数。ビジネスロジック層への re-export 用 |
 
 ### 想定される拡張ポイント
 

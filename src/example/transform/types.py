@@ -4,9 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import NewType
 
-import pydantic
-
-from example.foundation.model import CoreModel
+from example.foundation.model import CoreModel, Field
 
 TransformedDatetime = NewType("TransformedDatetime", datetime)
 """テキスト変換日時"""
@@ -71,8 +69,8 @@ class DstText:
 class TransformResult(CoreModel):
     """変換前後のテキスト行数を保持する不変な結果オブジェクト"""
 
-    src_length: int = pydantic.Field(..., description="変換前のテキスト行数")
-    dst_length: int = pydantic.Field(..., description="変換後のテキスト行数")
+    src_length: int = Field(..., description="変換前のテキスト行数")
+    dst_length: int = Field(..., description="変換後のテキスト行数")
 
     def to_json(self) -> str:
         """JSON文字列として返す"""

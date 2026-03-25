@@ -6,6 +6,8 @@
 
 import pydantic
 
+Field = pydantic.Field
+
 
 class CoreModel(pydantic.BaseModel):
     """不変かつ厳格なpydanticモデル基底

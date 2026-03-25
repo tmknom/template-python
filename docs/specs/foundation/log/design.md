@@ -15,6 +15,9 @@
 | コンポーネント | クラス名 | 役割 |
 | --- | --- | --- |
 | ログ設定管理 | `LogConfigurator` | 環境別ログ設定の構築と適用 |
+| dictConfig 組み立て | `LogDictConfigBuilder` | フォーマッター・ハンドラーを集約し設定辞書を返す |
+| フォーマッター生成 | `LogFormatter` | dictConfig 用 formatters 辞書を生成する |
+| ハンドラー生成 | `LogHandler` | dictConfig 用 handlers 辞書を生成する |
 | トレースデコレータ | `log` デコレータ | 関数・メソッドの呼び出しトレース |
 | 値フォーマット | `_format_value` 関数 | ログ出力値の要約フォーマット |
 
@@ -26,6 +29,9 @@
 src/example/foundation/log/
 ├── __init__.py        # 公開 API: LogConfigurator, log
 ├── configurator.py    # ログ設定管理: LogConfigurator クラス
+├── builder.py         # dictConfig 組み立て: LogDictConfigBuilder クラス
+├── formatter.py       # フォーマッター生成: LogFormatter クラス
+├── handler.py         # ハンドラー生成: LogHandler クラス
 └── decorator.py       # トレースデコレータ: log デコレータ, _format_value 関数
 ```
 
@@ -34,6 +40,9 @@ src/example/foundation/log/
 ```bash
 tests/unit/test_foundation/test_log/
 ├── test_configurator.py    # LogConfigurator のテスト
+├── test_builder.py         # LogDictConfigBuilder のテスト
+├── test_formatter.py       # LogFormatter のテスト
+├── test_handler.py         # LogHandler のテスト
 └── test_decorator.py       # log デコレータ / _format_value のテスト
 ```
 
@@ -82,6 +91,14 @@ tests/unit/test_foundation/test_log/
 **なぜそう設計したか**: YAML/JSON ファイルによる設定管理も選択肢だが、辞書ベースの構築は Python コード内で完結し、`json_formatter_class` のようなクラスオブジェクトの注入が可能になる。文字列でクラスパスを指定する場合は循環インポートの問題が生じる可能性があるが、クラスオブジェクトを直接渡すことでこれを回避できる。
 
 **トレードオフ**: 設定辞書の構造は `dictConfig` の仕様に依存するため、辞書のキー・値の誤りが実行時エラーとして検出される。型チェックでは事前に検出できない。
+
+### dictConfig 組み立ての責務分離
+
+**設計の意図**: dictConfig 辞書の組み立てを `LogConfigurator` から `LogDictConfigBuilder` / `LogFormatter` / `LogHandler` の 3 クラスに分離した。
+
+**なぜそう設計したか**: 元の `LogConfigurator` はオーケストレーション・辞書組み立て・formatter/handler 定義の生成をすべて担っており、責務が混在していた。`LogFormatter`（formatters 辞書を生成）と `LogHandler`（handlers 辞書を生成）に関心を分離し、`LogDictConfigBuilder` がそれらを集約して完全な辞書を返す構造にした。`LogConfigurator` はガード処理・LogDictConfigBuilder への委譲・dictConfig 適用の 3 つに責務が絞られ、可読性が向上する。
+
+**トレードオフ**: ファイル数が増えるため、小規模な変更でも複数ファイルを跨ぐことがある。各クラスが独立しているため、単体テストは書きやすい。
 
 ### カスタム JSON フォーマッターの注入設計
 
@@ -172,7 +189,9 @@ tests/unit/test_foundation/test_log/
 | 変更内容 | 主な変更対象 | 備考 |
 | --- | --- | --- |
 | 新しい環境向け設定を追加 | `configurator.py`（新規 `configure_*` メソッド） | `_configure` の引数として環境固有の設定を渡す |
-| ログフォーマットを変更 | `configurator.py`（`_build_dictconfig`） | `dictConfig` の辞書構造を確認してから変更する |
+| コンソールフォーマットを変更 | `formatter.py`（`LogFormatter.create_console_formatter`） | `dictConfig` の辞書構造を確認してから変更する |
+| ファイルフォーマットを変更 | `formatter.py`（`LogFormatter.create_file_formatter`） | `dictConfig` の辞書構造を確認してから変更する |
+| ハンドラー設定を変更 | `handler.py`（`LogHandler`） | `dictConfig` の辞書構造を確認してから変更する |
 | 値フォーマットの閾値を変更 | `decorator.py`（モジュールレベル定数） | テストの期待値も合わせて更新する |
 | トレースログのレベルを変更 | `decorator.py`（`logger.info` の呼び出し箇所） | 開始ログ・終了ログの両方を変更する |
 | 公開 API を追加 | `__init__.py` の `__all__` | 内部コンポーネントの公開は原則行わない |

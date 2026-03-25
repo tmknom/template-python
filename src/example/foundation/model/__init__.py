@@ -8,5 +8,6 @@ Docs:
 """
 
 from example.foundation.model.base import CoreModel
+from example.foundation.model.settings import CoreSettings, SettingsConfigDict
 
-__all__ = ["CoreModel"]
+__all__ = ["CoreModel", "CoreSettings", "SettingsConfigDict"]

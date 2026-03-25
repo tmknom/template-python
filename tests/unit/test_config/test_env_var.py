@@ -59,10 +59,10 @@ class TestEnvVarConfig:
         self, monkeypatch: pytest.MonkeyPatch
     ):
         # Arrange
-        monkeypatch.setenv("EXAMPLE_TMP_DIR", "/tmp/example")
+        monkeypatch.setenv("EXAMPLE_TMP_DIR", "/tmp/sample")
 
         # Act
         result = EnvVarConfig()
 
         # Assert
-        assert result.tmp_dir == Path("/tmp/example")
+        assert result.tmp_dir == Path("/tmp/sample")

@@ -8,11 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from example.foundation.fs import (
-    FileSystemError,
-    TextFileSystemReader,
-    TextFileSystemWriter,
-)
+from example.foundation.fs.error import FileSystemError
+from example.foundation.fs.text import TextFileSystemReader, TextFileSystemWriter
 
 
 class TestTextFileSystemReader:

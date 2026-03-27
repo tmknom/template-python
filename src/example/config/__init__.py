@@ -1,6 +1,6 @@
-"""設定管理の公開API。
+"""Configパッケージの公開API
 
-公開APIは `example.config` から import すること(`__all__` のみ互換性対象)。
+Foundation層のみに依存する。
 
 Docs:
     - docs/specs/config/requirements.md

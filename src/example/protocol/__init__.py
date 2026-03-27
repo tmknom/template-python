@@ -1,6 +1,4 @@
-"""プロトコル定義の公開API（OnionアーキテクチャのPort定義）。
-
-公開APIは `example.protocol` から import すること(`__all__` のみ互換性対象)。
+"""Protocolパッケージの公開API
 
 Docs:
     - docs/specs/protocol/requirements.md

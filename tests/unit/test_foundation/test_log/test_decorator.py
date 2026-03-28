@@ -10,55 +10,74 @@ from example.foundation.log.decorator import log
 class TestLogDecorator:
     """@log デコレータのテスト"""
 
-    def test_log_function_call_and_return(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_関数呼び出しと戻り値をログ出力する(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Arrange
         @log
         def sample_function(x: int, y: int) -> int:
             return x + y
 
+        # Act
         with caplog.at_level(logging.INFO):
             result = sample_function(3, 5)
 
+        # Assert
         assert result == 8
         assert len(caplog.records) > 0
 
-    def test_log_method_call_and_return(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_メソッド呼び出しと戻り値をログ出力する(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Arrange
         class SampleClass:
             @log
             def sample_method(self, value: str) -> str:
                 return f"processed: {value}"
 
+        # Act
         with caplog.at_level(logging.INFO):
             obj = SampleClass()
             result = obj.sample_method("test")
 
+        # Assert
         assert result == "processed: test"
         assert len(caplog.records) > 0
 
-    def test_log_with_no_arguments(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_引数なし関数の呼び出しをログ出力する(
+        self, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # Arrange
         @log
         def no_arg_function() -> str:
             return "hello"
 
+        # Act
         with caplog.at_level(logging.INFO):
             result = no_arg_function()
 
+        # Assert
         assert result == "hello"
         assert len(caplog.records) > 0
 
-    def test_log_does_not_suppress_exception(self) -> None:
+    def test_log_異常系_例外を握り潰さずに再送出する(self) -> None:
+        # Arrange
         @log
         def failing_function() -> None:
             raise ValueError("test error")
 
+        # Act / Assert
         with pytest.raises(ValueError):
             failing_function()
 
-    def test_log_preserves_function_metadata(self) -> None:
+    def test_log_正常系_デコレータ適用後も関数メタデータを保持する(self) -> None:
+        # Arrange
         @log
         def documented_function(x: int) -> int:
             """This is a docstring"""
             return x * 2
 
+        # Assert
         assert documented_function.__name__ == "documented_function"
         assert documented_function.__doc__ == "This is a docstring"
 

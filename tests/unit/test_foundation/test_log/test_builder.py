@@ -12,8 +12,8 @@ class TestLogDictConfigBuilder:
     def setup_method(self):
         self._builder = LogDictConfigBuilder()
 
-    def test_build_console_only(self):
-        """file_output=False の場合 console ハンドラーのみ含む辞書を返す"""
+    def test_build_正常系_コンソールのみの設定を返す(self):
+        # Act
         result = self._builder.build(
             level="INFO",
             stream="stdout",
@@ -22,13 +22,14 @@ class TestLogDictConfigBuilder:
             console_formatter_type="json_context",
         )
 
+        # Assert
         assert result["version"] == 1
         assert "console" in result["handlers"]
         assert "file" not in result["handlers"]
         assert result["root"]["handlers"] == ["console"]
 
-    def test_build_with_file_output(self):
-        """file_output=True の場合 file ハンドラーを追加する"""
+    def test_build_正常系_ファイルハンドラーを含む設定を返す(self):
+        # Act
         log_path = Path("/tmp/test.log")
         result = self._builder.build(
             level="DEBUG",
@@ -38,13 +39,13 @@ class TestLogDictConfigBuilder:
             console_formatter_type="color",
         )
 
+        # Assert
         assert "file" in result["handlers"]
         assert "file" in result["root"]["handlers"]
         assert "file" in result["formatters"]
 
-    def test_build_with_json_formatter_class(self):
-        """json_formatter_class を渡すと formatters.console にクラスが設定される"""
-
+    def test_build_正常系_JSONフォーマッタークラスを含む設定を返す(self):
+        # Act
         class CustomFormatter(logging.Formatter):
             pass
 
@@ -57,10 +58,11 @@ class TestLogDictConfigBuilder:
             json_formatter_class=CustomFormatter,
         )
 
+        # Assert
         assert result["formatters"]["console"]["()"] is CustomFormatter
 
-    def test_build_disable_existing_loggers_false(self):
-        """disable_existing_loggers は常に False"""
+    def test_build_正常系_disable_existing_loggers_falseの設定を返す(self):
+        # Act
         result = self._builder.build(
             level="INFO",
             stream="stdout",
@@ -69,4 +71,5 @@ class TestLogDictConfigBuilder:
             console_formatter_type="json_context",
         )
 
+        # Assert
         assert result["disable_existing_loggers"] is False

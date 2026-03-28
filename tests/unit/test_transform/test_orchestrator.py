@@ -32,3 +32,5 @@ class TestTransformOrchestrator:
 
         # Assert
         assert result.src_length == 3
+        assert result.dst_length == 4
+        assert fs_writer.file_path == Path("/tmp/output/input.txt")

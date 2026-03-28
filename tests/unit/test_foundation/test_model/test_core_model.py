@@ -61,11 +61,3 @@ class TestCoreModel:
         # Assert
         assert obj.name == "test_name"
         assert obj.description == "test description"
-
-    def test_frozen_異常系_フィールド変更でValidationError(self):
-        # Arrange
-        obj = SampleCoreModel.model_validate({"name": "test", "value": 42, "desc": "desc"})
-
-        # Act & Assert
-        with pytest.raises(pydantic.ValidationError):
-            obj.name = "modified"

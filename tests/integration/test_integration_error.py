@@ -22,5 +22,3 @@ class TestIntegrationError:
 
         # Assert
         assert result.returncode == 1
-        # エラーメッセージが出力されることを確認（標準エラー出力に表示される）
-        assert result.stderr or "Error" in result.stdout

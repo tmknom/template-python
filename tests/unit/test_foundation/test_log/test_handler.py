@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from example.foundation.log.handler import LogHandler
 
 
@@ -11,27 +13,34 @@ class TestLogHandler:
     def setup_method(self):
         self._handler = LogHandler()
 
-    def test_create_console_handler(self):
-        """create_console_handler は StreamHandler の辞書を返す"""
-        result = self._handler.create_console_handler(stream="stderr", level="INFO")
+    @pytest.mark.parametrize(
+        ("stream", "level", "expected_stream"),
+        [
+            ("stderr", "INFO", "ext://sys.stderr"),
+            ("stdout", "DEBUG", "ext://sys.stdout"),
+        ],
+    )
+    def test_create_console_handler_正常系_StreamHandlerの辞書を返す(
+        self, stream: str, level: str, expected_stream: str
+    ):
+        # Arrange
+        # Act
+        result = self._handler.create_console_handler(stream=stream, level=level)
 
+        # Assert
         assert result["class"] == "logging.StreamHandler"
-        assert result["stream"] == "ext://sys.stderr"
-        assert result["level"] == "INFO"
+        assert result["stream"] == expected_stream
+        assert result["level"] == level
         assert result["formatter"] == "console"
 
-    def test_create_console_handler_stdout(self):
-        """stream="stdout" の場合 ext://sys.stdout を返す"""
-        result = self._handler.create_console_handler(stream="stdout", level="DEBUG")
-
-        assert result["stream"] == "ext://sys.stdout"
-        assert result["level"] == "DEBUG"
-
-    def test_create_file_handler(self):
-        """create_file_handler は FileHandler の辞書を返す"""
+    def test_create_file_handler_正常系_FileHandlerの辞書を返す(self):
+        # Arrange
         log_path = Path("/tmp/test.log")
+
+        # Act
         result = self._handler.create_file_handler(log_path)
 
+        # Assert
         assert result["class"] == "logging.FileHandler"
         assert result["filename"] == str(log_path)
         assert result["encoding"] == "utf-8"

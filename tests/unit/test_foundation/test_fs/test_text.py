@@ -65,12 +65,8 @@ line2
         reader = TextFileSystemReader()
 
         # Act & Assert
-        try:
-            with pytest.raises(FileSystemError):
-                reader.read(test_file)
-        finally:
-            # テスト後に権限を復元（クリーンアップのため）
-            test_file.chmod(0o644)
+        with pytest.raises(FileSystemError):
+            reader.read(test_file)
 
     def test_read_異常系_エンコーディング不正でFileSystemError(self, tmp_path: Path):
         # Arrange
@@ -173,12 +169,8 @@ class TestTextFileSystemWriter:
         writer = TextFileSystemWriter()
 
         # Act & Assert
-        try:
-            with pytest.raises(FileSystemError):
-                writer.write("test content", test_file)
-        finally:
-            # テスト後に権限を復元(クリーンアップのため)
-            test_dir.chmod(0o755)
+        with pytest.raises(FileSystemError):
+            writer.write("test content", test_file)
 
     def test_write_異常系_ファイル名不正でFileSystemError(self, tmp_path: Path):
         # Arrange
@@ -206,12 +198,8 @@ class TestTextFileSystemWriter:
         writer = TextFileSystemWriter()
 
         # Act & Assert
-        try:
-            with pytest.raises(FileSystemError):
-                writer.write("test content", test_file)
-        finally:
-            # テスト後に権限を復元(クリーンアップのため)
-            test_dir.chmod(0o755)
+        with pytest.raises(FileSystemError):
+            writer.write("test content", test_file)
 
     def test_write_異常系_ディレクトリ作成時の予期しないエラーでFileSystemError(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -30,7 +31,7 @@ class TestIntegrationTransform:
         content = output_file.read_text(encoding="utf-8")
         assert "1: test line" in content
 
-    def test_transform_正常系_tmp_dirオプションが環境変数より優先される(self, tmp_dir: Path):
+    def test_transform_tmp_dirオプション指定_環境変数より優先される(self, tmp_dir: Path):
         # Arrange
         input_file = tmp_dir / "input.txt"
         input_file.write_text("test line", encoding="utf-8")
@@ -55,7 +56,7 @@ class TestIntegrationTransform:
             capture_output=True,
             text=True,
             timeout=10,
-            env={**__import__("os").environ, "EXAMPLE_TMP_DIR": str(env_tmp_dir)},
+            env={**os.environ, "EXAMPLE_TMP_DIR": str(env_tmp_dir)},
         )
 
         # Assert

@@ -20,14 +20,20 @@ class TestAppConfig:
         # Assert
         assert result.log_level == "WARNING"
 
-    def test_build_正常系_EXAMPLE_TMP_DIR設定時はenv値をTMP_DIR未設定時はcwd配下のtmpを使用(
+    def test_build_正常系_EXAMPLE_TMP_DIR設定時はenv値を使用(
         self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
     ):
-        # Arrange - 環境変数設定時: env値が使われること
+        # Arrange
         monkeypatch.setenv("EXAMPLE_TMP_DIR", str(tmp_path / "from_env"))
+
+        # Act & Assert
         assert AppConfig.build(EnvVarConfig()).tmp_dir == tmp_path / "from_env"
 
-        # Arrange - 環境変数未設定時: PathConfig経由でcwd/tmpが使われること
-        monkeypatch.delenv("EXAMPLE_TMP_DIR")
+    def test_build_正常系_EXAMPLE_TMP_DIR未設定時はcwd配下のtmpを使用(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ):
+        # Arrange
         monkeypatch.chdir(tmp_path)
+
+        # Act & Assert
         assert AppConfig.build(EnvVarConfig()).tmp_dir == tmp_path / "tmp"

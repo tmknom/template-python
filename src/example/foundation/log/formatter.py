@@ -1,4 +1,4 @@
-"""dictConfig 用フォーマッター定義生成"""
+"""LogパッケージのdictConfig用フォーマッター定義生成"""
 
 import logging
 from typing import Any, Literal

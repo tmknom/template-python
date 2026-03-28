@@ -1,4 +1,4 @@
-"""dictConfig 用ハンドラー定義生成"""
+"""LogパッケージのdictConfig用ハンドラー定義生成"""
 
 from pathlib import Path
 from typing import Any

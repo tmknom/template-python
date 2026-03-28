@@ -1,4 +1,4 @@
-"""ファイルシステム操作クラス（Adapter実装）"""
+"""Fsパッケージのファイルシステム操作クラス"""
 
 from pathlib import Path
 

@@ -1,4 +1,4 @@
-"""ロギング設定セットアップ機能"""
+"""Logパッケージのロギング設定セットアップ機能"""
 
 import logging
 import logging.config

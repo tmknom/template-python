@@ -1,4 +1,4 @@
-"""ロギングデコレータ"""
+"""Logパッケージのロギングデコレータ"""
 
 import functools
 import logging

@@ -1,4 +1,4 @@
-"""dictConfig 用設定辞書の組み立て"""
+"""LogパッケージのdictConfig用設定辞書の組み立て"""
 
 import logging
 from pathlib import Path

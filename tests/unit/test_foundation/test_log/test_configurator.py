@@ -43,9 +43,13 @@ class TestLogConfigurator:
         for handler in pytest_handlers:
             logger.removeHandler(handler)
         try:
+            # Arrange
             configurator = LogConfigurator(level="INFO")
+
+            # Act
             log_path = configurator.configure_plain()
 
+            # Assert
             assert log_path is not None
             assert "log" in log_path.name
         finally:
@@ -59,9 +63,13 @@ class TestLogConfigurator:
         for handler in pytest_handlers:
             logger.removeHandler(handler)
         try:
+            # Arrange
             configurator = LogConfigurator(app_name="test_app", level="INFO")
+
+            # Act
             log_path = configurator.configure_plain()
 
+            # Assert
             assert isinstance(log_path, Path)
         finally:
             for handler in pytest_handlers:
@@ -73,19 +81,23 @@ class TestLogConfigurator:
         for handler in pytest_handlers:
             logger.removeHandler(handler)
         try:
+            # Arrange
             configurator = LogConfigurator(app_name="test_app", level="INFO")
             configurator.configure_plain()
 
+            # Act
             # ハンドラーがある状態で再度呼ぶと再初期化しない
             configurator2 = LogConfigurator(app_name="test_app", level="INFO")
             log_path_2 = configurator2.configure_plain()
 
+            # Assert
             # FileHandler があるため既存パスを返す（None ではない）
             assert isinstance(log_path_2, Path)
 
             # FileHandler のないコンソールのみの状態で再初期化を試みると None を返す
             _remove_file_handlers(logger)
 
+            # Act & Assert
             configurator3 = LogConfigurator(app_name="test_app", level="INFO")
             log_path_3 = configurator3.configure_plain()
 
@@ -100,9 +112,13 @@ class TestLogConfigurator:
         for handler in pytest_handlers:
             logger.removeHandler(handler)
         try:
+            # Arrange
             configurator = LogConfigurator(app_name="test_app", level="DEBUG")
+
+            # Act
             log_path = configurator.configure_json()
 
+            # Assert
             assert log_path is None
         finally:
             for handler in pytest_handlers:
@@ -114,14 +130,17 @@ class TestLogConfigurator:
         for handler in pytest_handlers:
             logger.removeHandler(handler)
         try:
-
+            # Arrange
             class CustomFormatter(logging.Formatter):
                 def format(self, record: logging.LogRecord) -> str:
                     return f"CUSTOM: {record.getMessage()}"
 
             configurator = LogConfigurator(app_name="test_app", level="DEBUG")
+
+            # Act
             log_path = configurator.configure_json(json_formatter_class=CustomFormatter)
 
+            # Assert
             assert log_path is None
         finally:
             for handler in pytest_handlers:

@@ -66,7 +66,7 @@ class TestLogDecorator:
         def failing_function() -> None:
             raise ValueError("test error")
 
-        # Act / Assert
+        # Act & Assert
         with pytest.raises(ValueError):
             failing_function()
 
@@ -81,7 +81,7 @@ class TestLogDecorator:
         assert documented_function.__name__ == "documented_function"
         assert documented_function.__doc__ == "This is a docstring"
 
-    def test_log_truncates_large_list(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_大きなリストを切り詰めること(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def large_list_function() -> list[float]:
             return [0.1 * i for i in range(100)]
@@ -92,7 +92,7 @@ class TestLogDecorator:
         assert len(result) == 100
         assert len(caplog.records) > 0
 
-    def test_log_truncates_large_dict(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_大きな辞書を切り詰めること(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def large_dict_function() -> dict[str, int]:
             return {f"key_{i}": i for i in range(20)}
@@ -103,7 +103,7 @@ class TestLogDecorator:
         assert len(result) == 20
         assert len(caplog.records) > 0
 
-    def test_log_truncates_long_string(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_長い文字列を切り詰めること(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def long_string_function() -> str:
             return "a" * 200
@@ -114,7 +114,7 @@ class TestLogDecorator:
         assert len(result) == 200
         assert len(caplog.records) > 0
 
-    def test_log_does_not_truncate_small_list(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_小さなリストを切り詰めないこと(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def small_list_function() -> list[int]:
             return [1, 2, 3]
@@ -125,7 +125,7 @@ class TestLogDecorator:
         assert result == [1, 2, 3]
         assert len(caplog.records) > 0
 
-    def test_log_does_not_truncate_small_dict(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_小さな辞書を切り詰めないこと(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def small_dict_function() -> dict[str, int]:
             return {"a": 1, "b": 2}
@@ -136,7 +136,7 @@ class TestLogDecorator:
         assert result == {"a": 1, "b": 2}
         assert len(caplog.records) > 0
 
-    def test_log_truncates_large_list_argument(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_大きなリスト引数を切り詰めること(self, caplog: pytest.LogCaptureFixture) -> None:
         @log
         def process_vector(vector: list[float]) -> int:
             return len(vector)
@@ -149,7 +149,7 @@ class TestLogDecorator:
         assert result == 3072
         assert len(caplog.records) > 0
 
-    def test_log_truncates_empty_large_dict(self, caplog: pytest.LogCaptureFixture) -> None:
+    def test_log_正常系_空要素の大きな辞書を切り詰めること(self, caplog: pytest.LogCaptureFixture) -> None:
         # カスタム辞書クラス（len()は10以上、bool()はFalse）
         class FakeLargeEmptyDict(dict[str, int]):
             def __len__(self) -> int:

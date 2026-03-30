@@ -2,7 +2,7 @@ from pathlib import Path
 
 from example.transform.types import DstText
 from example.transform.writer import TextWriter
-from tests.unit.fake import InMemoryFsWriter
+from tests.fake.fs import InMemoryFsWriter
 
 
 class TestTextWriter:
@@ -19,5 +19,4 @@ class TestTextWriter:
         writer.write(text, path)
 
         # Assert
-        assert fs_writer.text == str(text)
-        assert fs_writer.file_path == path
+        assert fs_writer.written == {"output/result.txt": str(text)}

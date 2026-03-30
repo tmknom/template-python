@@ -1,7 +1,6 @@
 # Python開発ワークフロー
 
 生成AIがPython開発タスクに取りかかるときの実践ガイド。
-アーキテクチャの構造・設計思想は [architecture.md](architecture.md) に委ねる。
 本ドキュメントは「何を・どの順番で・どのルールに従ってやるか」を定義する。
 
 ## 技術スタック
@@ -49,6 +48,7 @@
 - コードを変更したら必ず `make all` を通す
 - `make all` が通らない状態でコミットしない
 - カバレッジは `make coverage` で計測する（`make all` には含まれないため明示的に実行する）
+- LSP ツールの診断結果は参考にしない（キャッシュ遅延で誤検知が多発するため、型エラーの有無は `make all` のみで判断する）
 
 ## 開発規律（Key Principles）
 
@@ -103,8 +103,9 @@ FS・DBなどプロジェクト管理下にある依存へのアクセスは実�
 ### 実装前（理解フェーズ）
 
 1. `llms.txt` を読み、タスクに関連するドキュメントを特定する
-2. 対象モジュールの `docs/specs/` を読む（`requirements.md` → `design.md` の順）
-3. リファレンス実装 `src/example/transform/` を確認する
+2. `docs/design/architecture.md` を読み、アーキテクチャ設計の全体像を理解する
+3. `docs/design/testing.md` を読み、テスト設計の全体像を理解する
+4. 対象モジュールの `docs/specs/` を読む（`requirements.md` → `design.md` の順）
 
 ### 実装中（TDD サイクル）
 

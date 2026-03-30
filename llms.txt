@@ -13,6 +13,7 @@ Identify and read task-related sections below:
 ## Python Development
 
 - [Architecture design](docs/design/architecture.md): Python application architecture based on Onion Architecture, Composition Root + Orchestrator pattern, Protocol-based DI, type design, error handling, and logging - Use when modifying `src/` or `tests/`, or when understanding component relationships, adding new features, evaluating design decisions, or implementing new packages
+- [Testing design](docs/design/testing.md): Test design principles, directory structure, Fake patterns, naming conventions, unit/integration/e2e test split, and guardrails - Use when writing tests, adding Fake implementations, understanding the Mock prohibition rationale, or reviewing test structure decisions
 - [Development workflow](docs/design/workflow.md): Tech stack, development commands, key principles (TDD, 100% coverage, type hints, test isolation), and step-by-step development flow (pre-implementation → TDD cycle → post-implementation) - Use when starting implementation tasks, understanding development rules, or reviewing the standard workflow
 
 ## Specifications

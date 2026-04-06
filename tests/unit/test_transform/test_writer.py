@@ -2,7 +2,7 @@ from pathlib import Path
 
 from example.transform.types import DstText
 from example.transform.writer import TextWriter
-from tests.fake.fs import InMemoryFsWriter
+from tests.fake import InMemoryFsWriter
 
 
 class TestTextWriter:

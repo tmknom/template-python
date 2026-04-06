@@ -51,7 +51,7 @@ allow-dirs = ["src/example/foundation/", "tests/"]
 # allow-dirs 未指定だと全パッケージ間のクロスインポートが禁止されるため、
 # 複数パッケージから参照される共通パッケージを明示的に許可する。
 [tool.paladin.rule.no-cross-package-import]
-allow-dirs = ["src/example/foundation/", "src/example/protocol/"]
+allow-dirs = ["src/example/foundation/", "src/example/protocol/", "tests/fake/"]
 
 [tool.ruff]
 line-length = 100

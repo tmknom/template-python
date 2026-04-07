@@ -6,7 +6,7 @@ from example.transform.orchestrator import TransformOrchestrator
 from example.transform.reader import TextReader
 from example.transform.transformer import TextTransformer
 from example.transform.writer import TextWriter
-from tests.fake.fs import InMemoryFsReader, InMemoryFsWriter
+from tests.fake import InMemoryFsReader, InMemoryFsWriter
 
 
 class TestTransformOrchestrator:

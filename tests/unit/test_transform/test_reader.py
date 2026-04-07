@@ -2,7 +2,7 @@ from pathlib import Path
 
 from example.transform.reader import TextReader
 from example.transform.types import SrcText
-from tests.fake.fs import InMemoryFsReader
+from tests.fake import InMemoryFsReader
 
 
 class TestTextReader:

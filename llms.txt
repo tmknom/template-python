@@ -56,6 +56,7 @@ Identify and read task-related sections below:
 
 - [pyproject.toml design](docs/design/pyproject.md): Configuration rationale for build system, linter, and type checker - Use when modifying or reviewing `pyproject.toml` settings, understanding ruff/pyright rule choices, or reviewing tool configuration decisions
 - [Specification design](docs/design/specs.md): Purpose and design philosophy of specs/ documents for AI-assisted development, authoring guidelines, and operational workflow - Use when modifying or reviewing `docs/specs/` documents, understanding why `docs/specs/` exists, or reviewing synchronization requirements
+- [Supply chain security design](docs/design/supply-chain.md): Threat model for CLI tools, implemented measures (dependency minimization, uv.lock commit, no-sources, required-version, exclude-newer, lock-check, audit, Dependabot), and measures considered but not adopted (no-build incompatibility with editable install, exclude-newer placement issue, etc.) - Use when reviewing or modifying security-related dependency settings, understanding why specific uv configurations were or were not adopted, or evaluating new supply chain security measures
 
 ## Introduction
 

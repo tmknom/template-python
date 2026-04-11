@@ -16,11 +16,22 @@ sync-online:
 
 .PHONY: sync
 sync:
-	uv sync --offline
+	uv sync --frozen --offline
 
 .PHONY: upgrade
 upgrade: ## 依存パッケージを最新版に更新（uv.lockを更新）
-	uv sync --upgrade
+	uv sync --upgrade --exclude-newer "1 week"
+
+.PHONY: security
+security: lock-check no-build-check audit ## サプライチェーンセキュリティ検証
+
+.PHONY: lock-check
+lock-check: ## uv.lockとpyproject.tomlの同期を確認
+	uv lock --check
+
+.PHONY: no-build-check
+no-build-check: ## 第三者依存がすべてwheelから解決できることを検証
+	uv sync --no-build --no-install-project --dry-run
 
 .PHONY: test
 test: ## テスト実行
@@ -49,6 +60,10 @@ lint: ## Ruffによる静的解析
 .PHONY: typecheck
 typecheck: ## Pyrightによる型チェック
 	uv run pyright --warnings
+
+.PHONY: audit
+audit: ## 既知の脆弱性をスキャン（pip-audit）
+	uv tool run pip-audit
 
 .PHONY: paladin
 paladin: ## Paladinによる静的解析

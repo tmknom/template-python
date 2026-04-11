@@ -21,7 +21,7 @@ class AppConfig:
     tmp_dir: Path
 
     @classmethod
-    def build(cls, env: EnvVarConfig, *, log_level: LogLevel | None = None) -> AppConfig:
+    def build(cls, env: EnvVarConfig, log_level: LogLevel | None = None) -> AppConfig:
         """EnvVarConfig から AppConfig を生成する
 
         Args:
@@ -32,4 +32,4 @@ class AppConfig:
         tmp_dir = (
             env.tmp_dir if env.tmp_dir is not None else PathConfig.from_base_dir(Path.cwd()).tmp_dir
         )
-        return AppConfig(log_level=effective_log_level, tmp_dir=tmp_dir)
+        return cls(log_level=effective_log_level, tmp_dir=tmp_dir)

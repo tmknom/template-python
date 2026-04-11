@@ -32,6 +32,6 @@ class PathConfig:
             標準的なパス構成のPathConfigインスタンス
         """
         tmp_dir = base_dir / "tmp"
-        return PathConfig(
+        return cls(
             tmp_dir=tmp_dir,
         )
